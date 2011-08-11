@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <sys/select.h>
 #include <unistd.h>
@@ -68,10 +69,13 @@ Window make_window(Display *dpy) {
 		CWEventMask,
 		&attr);
 
+	/* map/show window */
+	XMapWindow(dpy, win);
+
 	return win;
 }
 
-int event_handle_ctl(int fd) {
+void event_handle_ctl(int fd) {
 	/* TODO actually handle commands. */
 
 	/* TODO implement a buffering system */
@@ -82,7 +86,7 @@ int event_handle_ctl(int fd) {
 	read(fd, foo, 4096);
 }
 
-int event_handle_x11(Display *dpy) {
+void event_handle_x11(Display *dpy) {
 	XEvent ev;
 
 	while (XPending(dpy)) {
@@ -92,7 +96,7 @@ int event_handle_x11(Display *dpy) {
 	XFlush(dpy);
 }
 
-int event_loop(Display *dpy, int ctl_fd) {
+void event_loop(Display *dpy, int ctl_fd) {
 	int x_fd = ConnectionNumber(dpy);
 	int max_fd = (x_fd > ctl_fd ? x_fd : ctl_fd) + 1;
 
@@ -136,8 +140,6 @@ int main(int argc, char *argv[]) {
 
 	/* make window */
 	Window win = make_window(dpy);
-	
-	XMapWindow(dpy, win);
 
 	Pixmap bg_pmap = XCreatePixmap(dpy, win, 256, 256, 24);
 
