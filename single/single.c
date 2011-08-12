@@ -11,9 +11,20 @@
 
 #include <Imlib2.h>
 
-void spam(const char *foo) {
-	write(2, foo, strlen(foo));
-}
+#include "single/crap.h"
+#include "single/ctl.h"
+
+struct {
+	Display *display;
+	int fd;
+	GC gc;
+	int screen;
+	Colormap colormap;
+	Visual *visual;
+	int depth;
+	Window window;
+	Pixmap pixmap;
+} x11;
 
 const char *imliberr(Imlib_Load_Error e) {
 	switch (e) {
@@ -33,6 +44,7 @@ const char *imliberr(Imlib_Load_Error e) {
 	case IMLIB_LOAD_ERROR_OUT_OF_DISK_SPACE                  : return "No space left on device";
 	default                                                  : return "Unknown error";
 	}
+}
 
 Imlib_Image *current_image = NULL;
 
@@ -56,25 +68,39 @@ int load_image(char *filename) {
 	return 0;
 }
 
-void init_imlib_on_display(Display *dpy) {
-	imlib_context_set_display(dpy);
+int render_image_primitive() {
+	spam("rendering\n");
 
-	imlib_context_set_visual(DefaultVisual(dpy, DefaultScreen(dpy)));
-	imlib_context_set_colormap(DefaultColormap(dpy, DefaultScreen(dpy)));
+	imlib_context_set_image(current_image);
+	imlib_context_set_drawable(x11.pixmap);
+	imlib_render_image_part_on_drawable_at_size(
+		/* sxywh */ 0, 0, 256, 256,
+		/* dxywh */ 0, 0, 256, 256
+	);
+
+	XSetWindowBackgroundPixmap(x11.display, x11.window, x11.pixmap);
+	XClearWindow(x11.display, x11.window);
+
+	XFlush(x11.display);
+}
+
+static void init_imlib() {
+	imlib_context_set_display(x11.display);
+
+	imlib_context_set_visual(x11.visual);
+	imlib_context_set_colormap(x11.colormap);
 
 	imlib_context_set_color_modifier(NULL); /* magic or necessary? */
 	imlib_context_set_progress_function(NULL);
 	imlib_context_set_operation(IMLIB_OP_COPY);
 }
 
-Window make_window(Display *dpy) {
+static void make_window() {
 	XSetWindowAttributes attr;
-
-	int scr = DefaultScreen(dpy);
 
 	attr.backing_store = NotUseful;
 	attr.override_redirect = False;
-	attr.colormap = DefaultColormap(dpy, scr);
+	attr.colormap = x11.colormap;
 	attr.border_pixel = 0;
 	attr.background_pixel = 0;
 	attr.save_under = False;
@@ -85,21 +111,19 @@ Window make_window(Display *dpy) {
 		KeyPressMask | KeyReleaseMask |
 		FocusChangeMask | PropertyChangeMask;
 
-	Window win = XCreateWindow(
-		dpy, DefaultRootWindow(dpy),
+	x11.window = XCreateWindow(
+		x11.display, DefaultRootWindow(x11.display),
 		0, 0, 640, 480, 0,
-		DefaultDepth(dpy, scr),
+		x11.depth,
 		InputOutput,
-		DefaultVisual(dpy, scr),
+		x11.visual,
 		CWBackingStore | CWOverrideRedirect | CWColormap |
 		CWBorderPixel | CWBackPixel | CWSaveUnder |
 		CWEventMask,
 		&attr);
 
 	/* map/show window */
-	XMapWindow(dpy, win);
-
-	return win;
+	XMapWindow(x11.display, x11.window);
 }
 
 void event_handle_ctl(int fd) {
@@ -124,15 +148,14 @@ void event_handle_x11(Display *dpy) {
 }
 
 void event_loop(Display *dpy, int ctl_fd) {
-	int x_fd = ConnectionNumber(dpy);
-	int max_fd = (x_fd > ctl_fd ? x_fd : ctl_fd) + 1;
+	int max_fd = (x11.fd > ctl_fd ? x11.fd : ctl_fd) + 1;
 
 	fd_set fds;
 	int ret;
 
 	while (1) {
 		FD_ZERO(&fds);
-		FD_SET(x_fd, &fds);
+		FD_SET(x11.fd, &fds);
 		FD_SET(ctl_fd, &fds);
 
 		spam("wait for something to happen.\n");
@@ -144,10 +167,10 @@ void event_loop(Display *dpy, int ctl_fd) {
 
 		if (FD_ISSET(ctl_fd, &fds)) {
 			spam("handle command\n");
-			event_handle_ctl(ctl_fd);
+			ctl_handle_fd(ctl_fd);
 		}
 
-		if (FD_ISSET(x_fd, &fds)) {
+		if (FD_ISSET(x11.fd, &fds)) {
 			spam("handle X events\n");
 			event_handle_x11(dpy);
 		}
@@ -156,36 +179,28 @@ void event_loop(Display *dpy, int ctl_fd) {
 
 int main(int argc, char *argv[]) {
 	/* TODO parse options */
-	if (argc != 2) {
-		spam("provide exactly one argument!\n");
+	if (argc != 1) {
+		spam("single does not take arguments. images are loaded via the control channel\n");
 		exit(1);
 	}
 
 	/* TODO init imlib */
-	Display *dpy = XOpenDisplay(NULL);
-	init_imlib_on_display(dpy);
+	x11.display  = XOpenDisplay(NULL);
+	x11.fd       = ConnectionNumber(x11.display);
+	x11.screen   = DefaultScreen(x11.display);
+	x11.gc       = DefaultGC(x11.display, x11.screen);
+	x11.colormap = DefaultColormap(x11.display, x11.screen);
+	x11.visual   = DefaultVisual(x11.display, x11.screen);
+	x11.depth    = DefaultDepth(x11.display, x11.screen);
+
+	init_imlib();
 
 	/* make window */
-	Window win = make_window(dpy);
+	make_window();
+	x11.pixmap = XCreatePixmap(x11.display, x11.window, 256, 256, 24);
 
-	Pixmap bg_pmap = XCreatePixmap(dpy, win, 256, 256, 24);
+	XFlush(x11.display);
 
-	/* load image */
-	load_image(argv[1]);
-
-	/* render image */
-	imlib_context_set_image(current_image);
-	imlib_context_set_drawable(bg_pmap);
-	imlib_render_image_part_on_drawable_at_size(
-		/* sxywh */ 0, 0, 256, 256,
-		/* dxywh */ 0, 0, 256, 256
-	);
-
-	XSetWindowBackgroundPixmap(dpy, win, bg_pmap);
-	XClearWindow(dpy, win);
-
-	XFlush(dpy);
-
-	event_loop(dpy, 0); /* 0 = stdin */
+	event_loop(x11.display, 0); /* 0 = stdin */
 }
 
