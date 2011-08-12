@@ -98,12 +98,6 @@ static void init_imlib() {
 static void make_window() {
 	XSetWindowAttributes attr;
 
-	attr.backing_store = NotUseful;
-	attr.override_redirect = False;
-	attr.colormap = x11.colormap;
-	attr.border_pixel = 0;
-	attr.background_pixel = 0;
-	attr.save_under = False;
 	attr.event_mask =
 		StructureNotifyMask | ExposureMask | VisibilityChangeMask |
 		ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
@@ -117,8 +111,6 @@ static void make_window() {
 		x11.depth,
 		InputOutput,
 		x11.visual,
-		CWBackingStore | CWOverrideRedirect | CWColormap |
-		CWBorderPixel | CWBackPixel | CWSaveUnder |
 		CWEventMask,
 		&attr);
 
