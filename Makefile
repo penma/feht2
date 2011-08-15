@@ -1,13 +1,9 @@
-all: single/single
+all: single
 
-CC = clang
-CFLAGS = -Wall -Wextra -ggdb -I.
-LIBS = -lX11 -lImlib2
-
-single/single:
-	$(CC) $(CFLAGS) -o single/single single/*.c $(LIBS)
+single:
+	$(MAKE) -C single
 
 clean:
-	$(RM) single/single
+	$(MAKE) -C single clean
 
-.PHONY: all single/single clean
+.PHONY: all single clean

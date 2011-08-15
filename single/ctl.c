@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "render.h"
+
 /* this proto parser is fugly. */
 
 void ctl_handle_fd(int fd) {
@@ -23,7 +25,7 @@ void ctl_handle_fd(int fd) {
 		fprintf(stderr, "loading image file: %s\n", filename);
 
 		load_image(filename);
-		render_image_primitive();
+		render_image();
 	} else {
 		fprintf(stderr, "unknown command on ctl pipe: %s\n", command);
 	}

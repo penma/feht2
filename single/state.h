@@ -15,7 +15,6 @@ struct _single_state_x11 {
 	Visual *visual;
 	int depth;
 	Window window;
-	Pixmap pixmap;
 };
 
 extern struct _single_state_x11 s_x11;
@@ -28,24 +27,11 @@ struct _single_state_view {
 	double angle;
 
 	int win_width, win_height;
+
+	int dirty;
 };
 
 extern struct _single_state_view s_view;
-
-/* input state */
-
-enum _single_pointer_mode {
-	POINTER_MODE_NOTHING,
-	POINTER_MODE_PANNING,
-	POINTER_MODE_ZOOMING
-};
-
-struct _single_state_input {
-	enum _single_pointer_mode pointer_mode;
-	int pointer_last_x, pointer_last_y;
-};
-
-extern struct _single_state_input s_input;
 
 /* image data */
 
