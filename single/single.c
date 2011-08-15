@@ -13,18 +13,13 @@
 
 #include "single/crap.h"
 #include "single/ctl.h"
+#include "single/image.h"
+#include "single/state.h"
 
-struct {
-	Display *display;
-	int fd;
-	GC gc;
-	int screen;
-	Colormap colormap;
-	Visual *visual;
-	int depth;
-	Window window;
-	Pixmap pixmap;
-} x11;
+struct _single_state_x11 s_x11;
+struct _single_state_view s_view;
+struct _single_state_input s_input;
+struct _single_state_image s_image;
 
 const char *imliberr(Imlib_Load_Error e) {
 	switch (e) {
@@ -46,49 +41,140 @@ const char *imliberr(Imlib_Load_Error e) {
 	}
 }
 
-Imlib_Image *current_image = NULL;
+static int min(int a, int b) {
+	return a < b ? a : b;
+}
 
 int load_image(char *filename) {
-	if (current_image != NULL) {
-		imlib_context_set_image(current_image);
+	if (s_image.imlib != NULL) {
+		imlib_context_set_image(s_image.imlib);
 		imlib_free_image();
 	}
 
 	/* TODO error handling */
 	Imlib_Load_Error err;
-	current_image = imlib_load_image_with_error_return(filename, &err);
+	s_image.imlib = imlib_load_image_with_error_return(filename, &err);
 
-	if (current_image == NULL) {
+	if (s_image.imlib == NULL) {
 		const char *errmsg = imliberr(err);
-		spam("imlib load error: ");
-		spam(errmsg);
-		spam("\n");
+		fprintf(stderr, "imlib load error: %s\n", errmsg);
 	}
+
+	imlib_context_set_image(s_image.imlib);
+	s_image.width  = imlib_image_get_width();
+	s_image.height = imlib_image_get_height();
 
 	return 0;
 }
 
+static void render_background() {
+	static Pixmap checks_pmap = None;
+	Imlib_Image checks = NULL;
+
+	if (checks_pmap == None) {
+		int onoff, x, y;
+
+		checks = imlib_create_image(16, 16);
+
+		if (!checks) {
+			fprintf(stderr, "Unable to create a teeny weeny imlib image. I detect problems\n");
+		}
+
+		imlib_context_set_image(checks);
+
+		imlib_context_set_color(144, 144, 144, 255);
+		imlib_image_fill_rectangle(0, 0, 16, 16);
+
+		imlib_context_set_color(100, 100, 100, 255);
+		imlib_image_fill_rectangle(0, 0, 8, 8);
+		imlib_image_fill_rectangle(8, 8, 8, 8);
+
+		checks_pmap = XCreatePixmap(s_x11.display, s_x11.window, 16, 16, 24);
+
+		imlib_context_set_drawable(checks_pmap);
+		imlib_render_image_on_drawable(0, 0);
+		imlib_free_image_and_decache();
+	}
+
+	static GC gc = None;
+	XGCValues gcval;
+
+	if (gc == None) {
+		gcval.tile = checks_pmap;
+		gcval.fill_style = FillTiled;
+		gc = XCreateGC(s_x11.display, s_x11.window, GCTile | GCFillStyle, &gcval);
+	}
+
+	XFillRectangle(s_x11.display, s_x11.pixmap, gc, 0, 0, s_view.win_width, s_view.win_height);
+}
+
 int render_image_primitive() {
-	spam("rendering\n");
+	fputs("rendering\n", stderr);
 
-	imlib_context_set_image(current_image);
-	imlib_context_set_drawable(x11.pixmap);
-	imlib_render_image_part_on_drawable_at_size(
-		/* sxywh */ 0, 0, 256, 256,
-		/* dxywh */ 0, 0, 256, 256
-	);
+	/* render the background */
+	render_background();
 
-	XSetWindowBackgroundPixmap(x11.display, x11.window, x11.pixmap);
-	XClearWindow(x11.display, x11.window);
+	/* now render the actual image */
+	if (s_image.imlib != NULL) {
+		/* calculate draw offsets. */
+		int sx, sy, dx, dy, sw, sh, dw, dh;
 
-	XFlush(x11.display);
+		if (s_view.pan_x > 0) {
+			/* left part of image is hidden */
+			sx = s_view.pan_x;
+			dx = 0;
+		} else {
+			/* left part of image is somewhere in the window */
+			sx = 0;
+			dx = -s_view.pan_x;
+		}
+
+		if (s_view.pan_y > 0) {
+			/* top part of image is hidden */
+			sy = s_view.pan_y;
+			dy = 0;
+		} else {
+			/* top part of image is somewhere in the window */
+			sy = 0;
+			dy = -s_view.pan_y;
+		}
+
+		/* how much of the image is visible? */
+		dw = min(s_view.win_width  - dx, s_image.width  - sx);
+		dh = min(s_view.win_height - dy, s_image.height - sy);
+		sw = dw; sh = dh;
+
+		fprintf(stderr, "now rendering to coordinates s=%d,%d/%dx%d d=%d,%d/%dx%d\n", sx, sy, sw, sh, dx, dy, dw, dh);
+
+		imlib_context_set_image(s_image.imlib);
+		imlib_context_set_drawable(s_x11.pixmap);
+		imlib_render_image_part_on_drawable_at_size(
+			/* sxywh */ sx, sy, sw, sh,
+			/* dxywh */ dx, dy, dw, dh
+		);
+	} else {
+		fputs("not rendering because there is no image.\n", stderr);
+	}
+
+	XSetWindowBackgroundPixmap(s_x11.display, s_x11.window, s_x11.pixmap);
+	XClearWindow(s_x11.display, s_x11.window);
+
+	XFlush(s_x11.display);
+}
+
+static void create_view_pixmap() {
+	if (s_x11.pixmap != NULL) {
+		XFreePixmap(s_x11.display, s_x11.pixmap);
+	}
+
+	s_x11.pixmap = XCreatePixmap(s_x11.display, s_x11.window, s_view.win_width, s_view.win_height, 24);
 }
 
 static void init_imlib() {
-	imlib_context_set_display(x11.display);
+	imlib_context_set_display(s_x11.display);
 
-	imlib_context_set_visual(x11.visual);
-	imlib_context_set_colormap(x11.colormap);
+	imlib_context_set_visual(s_x11.visual);
+	imlib_context_set_colormap(s_x11.colormap);
 
 	imlib_context_set_color_modifier(NULL); /* magic or necessary? */
 	imlib_context_set_progress_function(NULL);
@@ -105,17 +191,23 @@ static void make_window() {
 		KeyPressMask | KeyReleaseMask |
 		FocusChangeMask | PropertyChangeMask;
 
-	x11.window = XCreateWindow(
-		x11.display, DefaultRootWindow(x11.display),
+	s_x11.window = XCreateWindow(
+		s_x11.display, DefaultRootWindow(s_x11.display),
 		0, 0, 640, 480, 0,
-		x11.depth,
+		s_x11.depth,
 		InputOutput,
-		x11.visual,
+		s_x11.visual,
 		CWEventMask,
 		&attr);
 
 	/* map/show window */
-	XMapWindow(x11.display, x11.window);
+	XMapWindow(s_x11.display, s_x11.window);
+
+	/* query size */
+	XWindowAttributes xwa;
+	XGetWindowAttributes(s_x11.display, s_x11.window, &xwa);
+	s_view.win_width  = xwa.width;
+	s_view.win_height = xwa.height;
 }
 
 void event_handle_ctl(int fd) {
@@ -134,20 +226,51 @@ void event_handle_x11(Display *dpy) {
 
 	while (XPending(dpy)) {
 		XNextEvent(dpy, &ev);
+
+		if (ev.type == ConfigureNotify) {
+			s_view.win_width  = ev.xconfigure.width;
+			s_view.win_height = ev.xconfigure.height;
+
+			create_view_pixmap();
+			render_image_primitive();
+		} else if (ev.type == ButtonPress) {
+			if (ev.xbutton.button == Button1) {
+				s_input.panning = 1;
+				s_input.pan_last_x = ev.xbutton.x;
+				s_input.pan_last_y = ev.xbutton.y;
+			}
+		} else if (ev.type == ButtonRelease) {
+			if (ev.xbutton.button == Button1) {
+				s_input.panning = 0;
+			}
+		} else if (ev.type == MotionNotify) {
+			if (s_input.panning) {
+				int dx = ev.xbutton.x - s_input.pan_last_x;
+				int dy = ev.xbutton.y - s_input.pan_last_y;
+
+				s_view.pan_x -= dx;
+				s_view.pan_y -= dy;
+
+				s_input.pan_last_x += dx;
+				s_input.pan_last_y += dy;
+
+				render_image_primitive();
+			}
+		}
 	}
 
 	XFlush(dpy);
 }
 
 void event_loop(Display *dpy, int ctl_fd) {
-	int max_fd = (x11.fd > ctl_fd ? x11.fd : ctl_fd) + 1;
+	int max_fd = (s_x11.fd > ctl_fd ? s_x11.fd : ctl_fd) + 1;
 
 	fd_set fds;
 	int ret;
 
 	while (1) {
 		FD_ZERO(&fds);
-		FD_SET(x11.fd, &fds);
+		FD_SET(s_x11.fd, &fds);
 		FD_SET(ctl_fd, &fds);
 
 		spam("wait for something to happen.\n");
@@ -162,7 +285,7 @@ void event_loop(Display *dpy, int ctl_fd) {
 			ctl_handle_fd(ctl_fd);
 		}
 
-		if (FD_ISSET(x11.fd, &fds)) {
+		if (FD_ISSET(s_x11.fd, &fds)) {
 			spam("handle X events\n");
 			event_handle_x11(dpy);
 		}
@@ -177,22 +300,26 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* TODO init imlib */
-	x11.display  = XOpenDisplay(NULL);
-	x11.fd       = ConnectionNumber(x11.display);
-	x11.screen   = DefaultScreen(x11.display);
-	x11.gc       = DefaultGC(x11.display, x11.screen);
-	x11.colormap = DefaultColormap(x11.display, x11.screen);
-	x11.visual   = DefaultVisual(x11.display, x11.screen);
-	x11.depth    = DefaultDepth(x11.display, x11.screen);
+	s_x11.display  = XOpenDisplay(NULL);
+	s_x11.fd       = ConnectionNumber(s_x11.display);
+	s_x11.screen   = DefaultScreen(s_x11.display);
+	s_x11.gc       = DefaultGC(s_x11.display, s_x11.screen);
+	s_x11.colormap = DefaultColormap(s_x11.display, s_x11.screen);
+	s_x11.visual   = DefaultVisual(s_x11.display, s_x11.screen);
+	s_x11.depth    = DefaultDepth(s_x11.display, s_x11.screen);
+
+	s_x11.pixmap   = NULL;
+
+	s_input.panning = 0;
 
 	init_imlib();
 
 	/* make window */
 	make_window();
-	x11.pixmap = XCreatePixmap(x11.display, x11.window, 256, 256, 24);
+	create_view_pixmap();
 
-	XFlush(x11.display);
+	XFlush(s_x11.display);
 
-	event_loop(x11.display, 0); /* 0 = stdin */
+	event_loop(s_x11.display, 0); /* 0 = stdin */
 }
 
