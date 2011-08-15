@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <X11/Xlib.h>
 
@@ -108,29 +109,36 @@ void render_image() {
 
 		if (s_view.pan_x < 0) {
 			/* left part of image is hidden */
-			sx = -s_view.pan_x;
+
+			sx = -lround(s_view.pan_x / s_view.scale);
 			dx = 0;
 		} else {
 			/* left part of image is somewhere in the window */
+
 			sx = 0;
 			dx = s_view.pan_x;
 		}
 
 		if (s_view.pan_y < 0) {
 			/* top part of image is hidden */
-			sy = -s_view.pan_y;
+
+			sy = -lround(s_view.pan_y / s_view.scale);
 			dy = 0;
 		} else {
 			/* top part of image is somewhere in the window */
+
 			sy = 0;
 			dy = s_view.pan_y;
 		}
 
 		/* how much of the image is visible? */
 
-		dw = min(s_view.win_width  - dx, s_image.width  - sx);
-		dh = min(s_view.win_height - dy, s_image.height - sy);
-		sw = dw; sh = dh;
+		dw = min(s_view.win_width  - s_view.pan_x, s_view.win_width);
+		dh = min(s_view.win_height - s_view.pan_y, s_view.win_height);
+		dw = min(dw, lround(s_image.width  * s_view.scale));
+		dh = min(dh, lround(s_image.height * s_view.scale));
+		sw = lround(dw / s_view.scale);
+		sh = lround(dh / s_view.scale);
 
 		fprintf(stderr, "now rendering to coordinates s=%d,%d/%dx%d d=%d,%d/%dx%d (scale: %f)\n", sx, sy, sw, sh, dx, dy, dw, dh, s_view.scale);
 

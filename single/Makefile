@@ -2,7 +2,7 @@ all: single
 
 CC = clang
 CFLAGS = -Wall -Wextra -ggdb
-LDLIBS = -lX11 -lImlib2
+LDLIBS = -lX11 -lImlib2 -lm
 
 single: ctl.o input.o render.o single.o x11.o
 
