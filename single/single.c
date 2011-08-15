@@ -6,8 +6,6 @@
 #include <unistd.h>
 
 #include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/Xresource.h>
 
 #include <Imlib2.h>
 
@@ -15,10 +13,11 @@
 #include "input.h"
 #include "state.h"
 #include "render.h"
+#include "x11.h"
 
-struct _single_state_x11 s_x11;
 struct _single_state_view s_view;
 struct _single_state_image s_image;
+Window x11_window;
 
 const char *imliberr(Imlib_Load_Error e) {
 	switch (e) {
@@ -62,46 +61,6 @@ int load_image(char *filename) {
 	return 0;
 }
 
-static void init_imlib() {
-	imlib_context_set_display(s_x11.display);
-
-	imlib_context_set_visual(s_x11.visual);
-	imlib_context_set_colormap(s_x11.colormap);
-
-	imlib_context_set_color_modifier(NULL); /* magic or necessary? */
-	imlib_context_set_progress_function(NULL);
-	imlib_context_set_operation(IMLIB_OP_COPY);
-}
-
-static void make_window() {
-	XSetWindowAttributes attr;
-
-	attr.event_mask =
-		StructureNotifyMask | ExposureMask | VisibilityChangeMask |
-		ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
-		PointerMotionMask | EnterWindowMask | LeaveWindowMask |
-		KeyPressMask | KeyReleaseMask |
-		FocusChangeMask | PropertyChangeMask;
-
-	s_x11.window = XCreateWindow(
-		s_x11.display, DefaultRootWindow(s_x11.display),
-		0, 0, 640, 480, 0,
-		s_x11.depth,
-		InputOutput,
-		s_x11.visual,
-		CWEventMask,
-		&attr);
-
-	/* map/show window */
-	XMapWindow(s_x11.display, s_x11.window);
-
-	/* query real size */
-	XWindowAttributes xwa;
-	XGetWindowAttributes(s_x11.display, s_x11.window, &xwa);
-	s_view.win_width  = xwa.width;
-	s_view.win_height = xwa.height;
-}
-
 void event_handle_x11(Display *dpy) {
 	XEvent ev;
 
@@ -126,14 +85,14 @@ void event_handle_x11(Display *dpy) {
 }
 
 void event_loop(Display *dpy, int ctl_fd) {
-	int max_fd = (s_x11.fd > ctl_fd ? s_x11.fd : ctl_fd) + 1;
+	int max_fd = (x11.fd > ctl_fd ? x11.fd : ctl_fd) + 1;
 
 	fd_set fds;
 	int ret;
 
 	while (1) {
 		FD_ZERO(&fds);
-		FD_SET(s_x11.fd, &fds);
+		FD_SET(x11.fd, &fds);
 		FD_SET(ctl_fd, &fds);
 
 		// fputs("wait for something to happen.\n", stderr);
@@ -148,7 +107,7 @@ void event_loop(Display *dpy, int ctl_fd) {
 			ctl_handle_fd(ctl_fd);
 		}
 
-		if (FD_ISSET(s_x11.fd, &fds)) {
+		if (FD_ISSET(x11.fd, &fds)) {
 			// fputs("activity on X11 connection\n", stderr);
 			event_handle_x11(dpy);
 		}
@@ -169,24 +128,17 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	/* TODO init imlib */
-	s_x11.display  = XOpenDisplay(NULL);
-	s_x11.fd       = ConnectionNumber(s_x11.display);
-	s_x11.screen   = DefaultScreen(s_x11.display);
-	s_x11.gc       = DefaultGC(s_x11.display, s_x11.screen);
-	s_x11.colormap = DefaultColormap(s_x11.display, s_x11.screen);
-	s_x11.visual   = DefaultVisual(s_x11.display, s_x11.screen);
-	s_x11.depth    = DefaultDepth(s_x11.display, s_x11.screen);
+	setup_x11();
 
 	s_view.scale = 1.0;
 
-	init_imlib();
+	setup_imlib();
 
 	/* make window */
 	make_window();
 
-	XFlush(s_x11.display);
+	XFlush(x11.display);
 
-	event_loop(s_x11.display, 0); /* 0 = stdin */
+	event_loop(x11.display, 0); /* 0 = stdin */
 }
 

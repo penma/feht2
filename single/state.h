@@ -6,18 +6,7 @@
 
 /* x11 state */
 
-struct _single_state_x11 {
-	Display *display;
-	int fd;
-	GC gc;
-	int screen;
-	Colormap colormap;
-	Visual *visual;
-	int depth;
-	Window window;
-};
-
-extern struct _single_state_x11 s_x11;
+extern Window x11_window;
 
 /* image view parameters */
 

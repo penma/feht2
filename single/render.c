@@ -5,6 +5,7 @@
 
 #include <Imlib2.h>
 
+#include "x11.h"
 #include "state.h"
 
 /* the background pixmap on which everything is drawn. */
@@ -38,7 +39,7 @@ static void render_checkerboard() {
 		imlib_image_fill_rectangle(0, 0, 8, 8);
 		imlib_image_fill_rectangle(8, 8, 8, 8);
 
-		checks_pmap = XCreatePixmap(s_x11.display, s_x11.window, 16, 16, s_x11.depth);
+		checks_pmap = XCreatePixmap(x11.display, x11_window, 16, 16, x11.depth);
 
 		imlib_context_set_drawable(checks_pmap);
 		imlib_render_image_on_drawable(0, 0);
@@ -53,10 +54,10 @@ static void render_checkerboard() {
 	if (gc == None) {
 		gcval.tile = checks_pmap;
 		gcval.fill_style = FillTiled;
-		gc = XCreateGC(s_x11.display, s_x11.window, GCTile | GCFillStyle, &gcval);
+		gc = XCreateGC(x11.display, x11_window, GCTile | GCFillStyle, &gcval);
 	}
 
-	XFillRectangle(s_x11.display, window_pixmap, gc, 0, 0, s_view.win_width, s_view.win_height);
+	XFillRectangle(x11.display, window_pixmap, gc, 0, 0, s_view.win_width, s_view.win_height);
 }
 
 static void ensure_window_pixmap() {
@@ -79,10 +80,10 @@ static void ensure_window_pixmap() {
 
 	if (need_new) {
 		if (window_pixmap != None) {
-			XFreePixmap(s_x11.display, window_pixmap);
+			XFreePixmap(x11.display, window_pixmap);
 		}
 
-		window_pixmap = XCreatePixmap(s_x11.display, s_x11.window, s_view.win_width, s_view.win_height, s_x11.depth);
+		window_pixmap = XCreatePixmap(x11.display, x11_window, s_view.win_width, s_view.win_height, x11.depth);
 		pixmap_width  = s_view.win_width;
 		pixmap_height = s_view.win_height;
 	}
@@ -145,9 +146,7 @@ void render_image() {
 		fputs("not rendering because there is no image.\n", stderr);
 	}
 
-	XSetWindowBackgroundPixmap(s_x11.display, s_x11.window, window_pixmap);
-	XClearWindow(s_x11.display, s_x11.window);
-
-	XFlush(s_x11.display);
+	XSetWindowBackgroundPixmap(x11.display, x11_window, window_pixmap);
+	XClearWindow(x11.display, x11_window);
 }
 
