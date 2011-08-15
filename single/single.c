@@ -9,11 +9,11 @@
 
 #include <Imlib2.h>
 
-#include "ctl.h"
-#include "input.h"
-#include "state.h"
-#include "render.h"
-#include "x11.h"
+#include "single/ctl.h"
+#include "single/state.h"
+#include "single/render.h"
+#include "common/input.h"
+#include "common/x11.h"
 
 struct _single_state_view s_view;
 struct _single_state_image s_image;

@@ -6,8 +6,8 @@
 
 #include <Imlib2.h>
 
-#include "x11.h"
-#include "state.h"
+#include "common/x11.h"
+#include "single/state.h"
 
 /* the background pixmap on which everything is drawn. */
 

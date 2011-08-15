@@ -5,8 +5,8 @@
 
 #include <Imlib2.h>
 
-#include "x11.h"
-#include "state.h"
+#include "common/x11.h"
+#include "single/state.h"
 
 struct x11_connection x11;
 

@@ -1,9 +1,10 @@
-all: single
+all: common single
 
-single:
-	$(MAKE) -C single
+common single:
+	$(MAKE) -C $@
 
 clean:
 	$(MAKE) -C single clean
+	$(MAKE) -C common clean
 
-.PHONY: all single clean
+.PHONY: all single common clean

@@ -3,7 +3,7 @@
 
 #include <X11/Xlib.h>
 
-#include "state.h"
+#include "single/state.h"
 
 enum pointer_mode {
 	MODE_NOTHING,
