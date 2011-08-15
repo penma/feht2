@@ -11,7 +11,6 @@
 
 #include <Imlib2.h>
 
-#include "single/crap.h"
 #include "single/ctl.h"
 #include "single/image.h"
 #include "single/state.h"
@@ -273,7 +272,7 @@ void event_loop(Display *dpy, int ctl_fd) {
 		FD_SET(s_x11.fd, &fds);
 		FD_SET(ctl_fd, &fds);
 
-		spam("wait for something to happen.\n");
+		fputs("wait for something to happen.\n", stderr);
 		ret = select(max_fd, &fds, NULL, NULL, NULL);
 
 		if (ret == -1) {
@@ -281,12 +280,12 @@ void event_loop(Display *dpy, int ctl_fd) {
 		}
 
 		if (FD_ISSET(ctl_fd, &fds)) {
-			spam("handle command\n");
+			fputs("activity on ctl channel\n", stderr);
 			ctl_handle_fd(ctl_fd);
 		}
 
 		if (FD_ISSET(s_x11.fd, &fds)) {
-			spam("handle X events\n");
+			fputs("activity on X11 connection\n", stderr);
 			event_handle_x11(dpy);
 		}
 	}
@@ -295,7 +294,7 @@ void event_loop(Display *dpy, int ctl_fd) {
 int main(int argc, char *argv[]) {
 	/* TODO parse options */
 	if (argc != 1) {
-		spam("single does not take arguments. images are loaded via the control channel\n");
+		fputs("single does not take arguments. images are loaded via the control channel\n", stderr);
 		exit(1);
 	}
 

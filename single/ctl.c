@@ -1,8 +1,7 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "single/crap.h"
 
 /* this proto parser is fugly. */
 
@@ -21,15 +20,11 @@ void ctl_handle_fd(int fd) {
 		read(fd, filename, count);
 		filename[count] = '\0';
 
-		spam("load: ");
-		spam(filename);
-		spam("\n");
+		fprintf(stderr, "loading image file: %s\n", filename);
 
 		load_image(filename);
 		render_image_primitive();
 	} else {
-		spam("unknown command on pipe: ");
-		spam(command);
-		spam("\n");
+		fprintf(stderr, "unknown command on ctl pipe: %s\n", command);
 	}
 }
