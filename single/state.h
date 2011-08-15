@@ -34,9 +34,15 @@ extern struct _single_state_view s_view;
 
 /* input state */
 
+enum _single_pointer_mode {
+	POINTER_MODE_NOTHING,
+	POINTER_MODE_PANNING,
+	POINTER_MODE_ZOOMING
+};
+
 struct _single_state_input {
-	int panning;
-	int pan_last_x, pan_last_y;
+	enum _single_pointer_mode pointer_mode;
+	int pointer_last_x, pointer_last_y;
 };
 
 extern struct _single_state_input s_input;

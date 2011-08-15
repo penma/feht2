@@ -116,24 +116,24 @@ void render_image_primitive() {
 		/* calculate draw offsets. */
 		int sx, sy, dx, dy, sw, sh, dw, dh;
 
-		if (s_view.pan_x > 0) {
+		if (s_view.pan_x < 0) {
 			/* left part of image is hidden */
-			sx = s_view.pan_x;
+			sx = -s_view.pan_x;
 			dx = 0;
 		} else {
 			/* left part of image is somewhere in the window */
 			sx = 0;
-			dx = -s_view.pan_x;
+			dx = s_view.pan_x;
 		}
 
-		if (s_view.pan_y > 0) {
+		if (s_view.pan_y < 0) {
 			/* top part of image is hidden */
-			sy = s_view.pan_y;
+			sy = -s_view.pan_y;
 			dy = 0;
 		} else {
 			/* top part of image is somewhere in the window */
 			sy = 0;
-			dy = -s_view.pan_y;
+			dy = s_view.pan_y;
 		}
 
 		/* how much of the image is visible? */
@@ -232,24 +232,33 @@ void event_handle_x11(Display *dpy) {
 			render_image_primitive();
 		} else if (ev.type == ButtonPress) {
 			if (ev.xbutton.button == Button1) {
-				s_input.panning = 1;
-				s_input.pan_last_x = ev.xbutton.x;
-				s_input.pan_last_y = ev.xbutton.y;
+				s_input.pointer_mode = POINTER_MODE_PANNING;
+				s_input.pointer_last_x = ev.xbutton.x;
+				s_input.pointer_last_y = ev.xbutton.y;
+			} else if (ev.xbutton.button == Button2) {
+				s_input.pointer_mode = POINTER_MODE_ZOOMING;
+				s_input.pointer_last_x = ev.xbutton.x;
+				s_input.pointer_last_y = ev.xbutton.y;
 			}
 		} else if (ev.type == ButtonRelease) {
-			if (ev.xbutton.button == Button1) {
-				s_input.panning = 0;
-			}
+			s_input.pointer_mode = POINTER_MODE_NOTHING;
 		} else if (ev.type == MotionNotify) {
-			if (s_input.panning) {
-				int dx = ev.xbutton.x - s_input.pan_last_x;
-				int dy = ev.xbutton.y - s_input.pan_last_y;
+			if (s_input.pointer_mode == POINTER_MODE_PANNING) {
+				int dx = ev.xbutton.x - s_input.pointer_last_x;
+				int dy = ev.xbutton.y - s_input.pointer_last_y;
 
-				s_view.pan_x -= dx;
-				s_view.pan_y -= dy;
+				s_view.pan_x += dx;
+				s_view.pan_y += dy;
 
-				s_input.pan_last_x += dx;
-				s_input.pan_last_y += dy;
+				s_input.pointer_last_x += dx;
+				s_input.pointer_last_y += dy;
+
+				render_image_primitive();
+			} else if (s_input.pointer_mode == POINTER_MODE_ZOOMING) {
+				s_view.scale = ev.xbutton.x / 100.0;
+
+				s_input.pointer_last_x = ev.xbutton.x;
+				s_input.pointer_last_y = ev.xbutton.y;
 
 				render_image_primitive();
 			}
@@ -307,7 +316,7 @@ int main(int argc, char *argv[]) {
 
 	s_x11.pixmap   = None;
 
-	s_input.panning = 0;
+	s_input.pointer_mode = POINTER_MODE_NOTHING;
 
 	init_imlib();
 
