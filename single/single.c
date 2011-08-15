@@ -78,6 +78,8 @@ void event_handle_x11(Display *dpy) {
 			input_button_release(ev);
 		} else if (ev.type == MotionNotify) {
 			input_pointer_motion(ev);
+		} else {
+			fprintf(stderr, "unknown X event type %d\n", ev.type);
 		}
 	}
 
@@ -118,6 +120,8 @@ void event_loop(Display *dpy, int ctl_fd) {
 			render_image();
 			s_view.dirty = 0;
 		}
+
+		XFlush(dpy);
 	}
 }
 
