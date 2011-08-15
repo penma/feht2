@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use IPC::Open3;
+use IO::Select;
+
+my ($in, $out, $err);
+my $pid = open3($in, $out, $err, "./single/single");
+
+print $in "OPEN" . pack("C/a", $ARGV[0]);
+
+my $select = IO::Select->new(\*STDIN, $out, $err);
+
+while (my @ready = $select->can_read()) {
+	for my $fh (@ready) {
+		if ($fh == \*STDIN) {
+			sysread(STDIN, my $data, 4096);
+			syswrite($in, $data);
+		} elsif ($fh == $out) {
+			sysread($out, my $data, 4096);
+			syswrite(STDOUT, $data);
+		} elsif ($fh == $err) {
+			sysread($err, my $data, 4096);
+			syswrite(STDERR, $data);
+		} else {
+			die("wtf");
+		}
+	}
+}
