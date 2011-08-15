@@ -71,8 +71,6 @@ static void render_background() {
 	Imlib_Image checks = NULL;
 
 	if (checks_pmap == None) {
-		int onoff, x, y;
-
 		checks = imlib_create_image(16, 16);
 
 		if (!checks) {
@@ -107,7 +105,7 @@ static void render_background() {
 	XFillRectangle(s_x11.display, s_x11.pixmap, gc, 0, 0, s_view.win_width, s_view.win_height);
 }
 
-int render_image_primitive() {
+void render_image_primitive() {
 	fputs("rendering\n", stderr);
 
 	/* render the background */
@@ -162,7 +160,7 @@ int render_image_primitive() {
 }
 
 static void create_view_pixmap() {
-	if (s_x11.pixmap != NULL) {
+	if (s_x11.pixmap != None) {
 		XFreePixmap(s_x11.display, s_x11.pixmap);
 	}
 
@@ -307,7 +305,7 @@ int main(int argc, char *argv[]) {
 	s_x11.visual   = DefaultVisual(s_x11.display, s_x11.screen);
 	s_x11.depth    = DefaultDepth(s_x11.display, s_x11.screen);
 
-	s_x11.pixmap   = NULL;
+	s_x11.pixmap   = None;
 
 	s_input.panning = 0;
 
