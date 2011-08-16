@@ -89,8 +89,8 @@ static void eh_click(struct input_event_click e) {
 }
 
 void input_init() {
-	input_set_handler_click(eh_click);
-	input_set_handler_drag_start(eh_drag_start);
-	input_set_handler_drag_stop(eh_drag_stop);
-	input_set_handler_drag_update(eh_drag_update);
+	input_ev_click = eh_click;
+	input_ev_drag_start = eh_drag_start;
+	input_ev_drag_stop = eh_drag_stop;
+	input_ev_drag_update = eh_drag_update;
 }

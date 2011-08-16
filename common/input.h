@@ -27,11 +27,12 @@ struct input_event_drag_update {
 	int delta_x, delta_y; /* delta since last drag event */
 };
 
+extern void (*input_ev_click      )(struct input_event_click);
+extern void (*input_ev_hover      )(struct input_event_hover);
+extern void (*input_ev_drag_start )(struct input_event_drag_start);
+extern void (*input_ev_drag_stop  )(struct input_event_drag_stop);
+extern void (*input_ev_drag_update)(struct input_event_drag_update);
+
 int input_try_xevent(XEvent);
-void input_set_handler_click(void (*f)(struct input_event_click));
-void input_set_handler_hover(void (*f)(struct input_event_hover));
-void input_set_handler_drag_start(void (*f)(struct input_event_drag_start));
-void input_set_handler_drag_stop(void (*f)(struct input_event_drag_stop));
-void input_set_handler_drag_update(void (*f)(struct input_event_drag_update));
 
 #endif
