@@ -12,8 +12,11 @@
 #include "single/ctl.h"
 #include "single/state.h"
 #include "single/render.h"
+
 #include "common/input.h"
 #include "common/x11.h"
+
+#include "single/input.h"
 
 struct _single_state_view s_view;
 struct _single_state_image s_image;
@@ -67,17 +70,15 @@ void event_handle_x11(Display *dpy) {
 	while (XPending(dpy)) {
 		XNextEvent(dpy, &ev);
 
+		if (input_try_xevent(ev)) {
+			continue;
+		}
+
 		if (ev.type == ConfigureNotify) {
 			s_view.win_width  = ev.xconfigure.width;
 			s_view.win_height = ev.xconfigure.height;
 
 			s_view.dirty = 1;
-		} else if (ev.type == ButtonPress) {
-			input_button_press(ev);
-		} else if (ev.type == ButtonRelease) {
-			input_button_release(ev);
-		} else if (ev.type == MotionNotify) {
-			input_pointer_motion(ev);
 		} else {
 			fprintf(stderr, "unknown X event type %d\n", ev.type);
 		}
@@ -137,6 +138,8 @@ int main(int argc, char *argv[]) {
 	s_view.scale = 1.0;
 
 	setup_imlib();
+
+	input_init();
 
 	/* make window */
 	make_window();
