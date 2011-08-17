@@ -12,95 +12,57 @@
 extern Window x11_window;
 extern int win_width, win_height;
 
-/* the background pixmap on which everything is drawn. */
+/* the background image on which everything is drawn. */
 
-static int pixmap_width = 0, pixmap_height = 0;
-static Pixmap window_pixmap = None;
+static int window_imlib_width = 0, window_imlib_height = 0;
+static Imlib_Image window_imlib = NULL;
 
 static int min(int a, int b) {
 	return a < b ? a : b;
 }
 
-static void render_checkerboard() {
-	/* create the checkerboard texture, if not already done. */
-
-	static Pixmap checks_pmap = None;
-	Imlib_Image checks = NULL;
-
-	if (checks_pmap == None) {
-		checks = imlib_create_image(16, 16);
-
-		if (!checks) {
-			fputs("Unable to create a teeny weeny imlib image. I detect problems\n", stderr);
-		}
-
-		imlib_context_set_image(checks);
-
-		imlib_context_set_color(144, 144, 144, 255);
-		imlib_image_fill_rectangle(0, 0, 16, 16);
-
-		imlib_context_set_color(100, 100, 100, 255);
-		imlib_image_fill_rectangle(0, 0, 8, 8);
-		imlib_image_fill_rectangle(8, 8, 8, 8);
-
-		checks_pmap = XCreatePixmap(x11.display, x11_window, 16, 16, x11.depth);
-
-		imlib_context_set_drawable(checks_pmap);
-		imlib_render_image_on_drawable(0, 0);
-		imlib_free_image_and_decache();
-	}
-
-	/* and plot the checkerboards onto the pixmap */
-
-	static GC gc = None;
-	XGCValues gcval;
-
-	if (gc == None) {
-		gcval.tile = checks_pmap;
-		gcval.fill_style = FillTiled;
-		gc = XCreateGC(x11.display, x11_window, GCTile | GCFillStyle, &gcval);
-	}
-
-	XFillRectangle(x11.display, window_pixmap, gc, 0, 0, win_width, win_height);
-}
-
-static void ensure_window_pixmap() {
+static void ensure_window_imlib() {
 	int need_new = 0;
 
-	/* if there's no pixmap yet, we obviously need one. */
+	/* if there's no imlib image yet, we obviously need one. */
 
-	if (window_pixmap == None) {
+	if (window_imlib == NULL) {
 		need_new = 1;
 	}
 
 	/* if window size has changed, we need a new pixmap. */
 
-	if (win_width  != pixmap_width ||
-	    win_height != pixmap_height) {
+	if (win_width  != window_imlib_width ||
+	    win_height != window_imlib_height) {
 		need_new = 1;
 	}
 
 	/* now maybe create a new one */
 
 	if (need_new) {
-		if (window_pixmap != None) {
-			XFreePixmap(x11.display, window_pixmap);
+		if (window_imlib != NULL) {
+			imlib_context_set_image(window_imlib);
+			imlib_free_image_and_decache();
 		}
 
-		window_pixmap = XCreatePixmap(x11.display, x11_window, win_width, win_height, x11.depth);
-		pixmap_width  = win_width;
-		pixmap_height = win_height;
+		window_imlib = imlib_create_image(win_width, win_height);
+		window_imlib_width  = win_width;
+		window_imlib_height = win_height;
 	}
 }
 
 void update_view() {
-	/* ensure we have a sane pixmap to draw on */
+	/* ensure we have a sane background image to draw on */
 
-	ensure_window_pixmap();
+	ensure_window_imlib();
 
-	/* render the checkerboard background */
+	imlib_context_set_image(window_imlib);
 
-	render_checkerboard();
+	/* render the background */
+
+	/* standard black */
+	imlib_context_set_color(0, 0, 0, 255);
+	imlib_image_fill_rectangle(0, 0, win_width, win_height);
 
 	/* render all the thumbnails. */
 
@@ -118,9 +80,7 @@ void update_view() {
 		/* draw image, if available */
 
 		if (t->imlib != NULL && !t->failed) {
-			imlib_context_set_image(t->imlib);
-			imlib_context_set_drawable(window_pixmap);
-			imlib_render_image_part_on_drawable_at_size(
+			imlib_blend_image_onto_image(t->imlib, 1,
 				/* sxywh */ 0, 0, t->width, t->height,
 				/* dxywh */
 					cell_x * thumb_width + hspacing * (cell_x + 1),
@@ -143,7 +103,10 @@ void update_view() {
 		p++;
 	}
 
-	XSetWindowBackgroundPixmap(x11.display, x11_window, window_pixmap);
-	XClearWindow(x11.display, x11_window);
+	/* transfer the image to the window */
+
+	imlib_context_set_image(window_imlib);
+	imlib_context_set_drawable(x11_window);
+	imlib_render_image_on_drawable(0, 0);
 }
 
