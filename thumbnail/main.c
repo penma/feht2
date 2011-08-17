@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
 	make_window();
 
 	XFlush(x11.display);
+	XStoreName(x11.display, x11_window, argv[1]);
 
 	/* blafoo */
 
