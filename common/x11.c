@@ -6,9 +6,9 @@
 #include <Imlib2.h>
 
 #include "common/x11.h"
-#include "single/state.h"
 
 struct x11_connection x11;
+extern Window x11_window;
 
 void setup_x11() {
 	/* connect and cache some static values. */
@@ -51,12 +51,6 @@ void setup_imlib() {
 
 	/* map/show window */
 	XMapWindow(x11.display, x11_window);
-
-	/* query real size */
-	XWindowAttributes xwa;
-	XGetWindowAttributes(x11.display, x11_window, &xwa);
-	s_view.win_width  = xwa.width;
-	s_view.win_height = xwa.height;
 }
 
 

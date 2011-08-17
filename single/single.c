@@ -144,6 +144,12 @@ int main(int argc, char *argv[]) {
 	/* make window */
 	make_window();
 
+	/* query real window size */
+	XWindowAttributes xwa;
+	XGetWindowAttributes(x11.display, x11_window, &xwa);
+	s_view.win_width  = xwa.width;
+	s_view.win_height = xwa.height;
+
 	XFlush(x11.display);
 
 	event_loop(x11.display, 0); /* 0 = stdin */
