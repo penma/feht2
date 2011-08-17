@@ -77,19 +77,60 @@ void update_view() {
 	while (*p != NULL) {
 		struct thumbnail *t = (*p);
 
+		/* cell origin, spacings included */
+
+		int pos_x, pos_y;
+		pos_x = cell_x * thumb_width + hspacing * (cell_x + 1);
+		pos_y = cell_y * (thumb_height + text_height) + vspacing * (cell_y + 1);
+
 		/* draw image, if available */
 
 		if (t->imlib != NULL && !t->failed) {
 			imlib_blend_image_onto_image(t->imlib, 1,
 				/* sxywh */ 0, 0, t->width, t->height,
 				/* dxywh */
-					cell_x * thumb_width + hspacing * (cell_x + 1),
-					cell_y * (thumb_height + text_height) + vspacing * (cell_y + 1),
+					pos_x, pos_y,
 					thumb_width, thumb_height
 			);
 		}
 
 		/* TODO draw text */
+
+		imlib_add_path_to_font_path("/usr/share/fonts/truetype/freefont");
+		Imlib_Font font = imlib_load_font("FreeSans/10");
+
+		if (font != NULL) {
+			imlib_context_set_font(font);
+			imlib_context_set_color(255, 255, 255, 255);
+
+			/* text to render */
+
+			char *basename = strrchr(t->filename, '/');
+			if (basename == NULL) {
+				basename = t->filename;
+			} else {
+				basename++; /* skip the '/' */
+			}
+
+			/* build text. TODO shorten if too long. */
+
+			char *text = malloc(sizeof(char) * (strlen(basename) + 1));
+
+			strcpy(text, basename);
+
+			/* and render it */
+
+			int textwidth, textheight;
+			imlib_get_text_size(text, &textwidth, &textheight);
+
+			int tx, ty;
+			tx = pos_x + (thumb_width - textwidth) / 2;
+			ty = pos_y + thumb_height; /* the 2 is random */
+
+			imlib_text_draw(tx, ty, text);
+
+			free(text);
+		}
 
 		/* update cell pos */
 
