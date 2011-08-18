@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,10 +107,7 @@ int main(int argc, char *argv[]) {
 		struct thumbnail *t = thumbnails[i];
 
 		char *fn = dir_entries[i]->d_name;
-		t->filename = malloc(sizeof(char) * (strlen(argv[1]) + 1 + strlen(fn) + 1));
-		strcpy(t->filename, argv[1]);
-		strcat(t->filename, "/");
-		strcat(t->filename, fn);
+		asprintf(&t->filename, "%s/%s", argv[1], fn);
 		t->failed = 0;
 		t->imlib = NULL;
 
