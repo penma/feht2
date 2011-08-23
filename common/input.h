@@ -14,6 +14,7 @@ struct input_event_hover {
 
 struct input_event_drag_start {
 	int button;
+	int start_x, start_y;
 };
 
 struct input_event_drag_stop {
@@ -22,9 +23,8 @@ struct input_event_drag_stop {
 
 struct input_event_drag_update {
 	int button;
-	int start_x, start_y; /* pointer position at drag start */
-	int  dist_x,  dist_y; /* total distance since drag start */
-	int delta_x, delta_y; /* delta since last drag event */
+	int   start_x,   start_y; /* pointer position at drag start */
+	int pointer_x, pointer_y; /* virtual pointer position now */
 };
 
 extern void (*input_ev_click      )(struct input_event_click);

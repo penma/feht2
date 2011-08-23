@@ -45,7 +45,9 @@ static void xev_motion(XEvent ev) {
 		if (!moved) {
 			moved = 1;
 			if (input_ev_drag_start != NULL) input_ev_drag_start((struct input_event_drag_start){
-				.button = button_pressed
+				.button = button_pressed,
+				.start_x = drag_start_x,
+				.start_y = drag_start_y,
 			});
 		}
 
@@ -53,10 +55,8 @@ static void xev_motion(XEvent ev) {
 			.button = button_pressed,
 			.start_x = drag_start_x,
 			.start_y = drag_start_y,
-			.dist_x  = ev.xmotion.x - drag_start_x,
-			.dist_y  = ev.xmotion.y - drag_start_y,
-			.delta_x = ev.xmotion.x - drag_last_x,
-			.delta_y = ev.xmotion.y - drag_last_y
+			.pointer_x = ev.xmotion.x, /* TODO pointer warping */
+			.pointer_y = ev.xmotion.y, /* dito */
 		});
 	} else {
 		if (input_ev_hover != NULL) input_ev_hover((struct input_event_hover){
