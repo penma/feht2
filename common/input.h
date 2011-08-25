@@ -27,11 +27,17 @@ struct input_event_drag_update {
 	int pointer_x, pointer_y; /* virtual pointer position now */
 };
 
-extern void (*input_ev_click      )(struct input_event_click);
-extern void (*input_ev_hover      )(struct input_event_hover);
-extern void (*input_ev_drag_start )(struct input_event_drag_start);
-extern void (*input_ev_drag_stop  )(struct input_event_drag_stop);
-extern void (*input_ev_drag_update)(struct input_event_drag_update);
+void input_set_drag_handlers(
+	void (*drag_start )(struct input_event_drag_start),
+	void (*drag_stop  )(struct input_event_drag_stop),
+	void (*drag_update)(struct input_event_drag_update)
+);
+
+void input_set_click_handler(void (*click)(struct input_event_click));
+
+void input_set_hover_handler(void (*hover)(struct input_event_hover));
+
+void input_set_drag_limits(int xneg, int xpos, int yneg, int ypos);
 
 int input_try_xevent(XEvent);
 
