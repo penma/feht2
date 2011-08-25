@@ -81,6 +81,18 @@ void input_set_drag_limits(int xneg, int xpos, int yneg, int ypos) {
 } while (0)
 
 static void xev_press(XEvent ev) {
+	/* we only handle one drag at a time, so if another button was pressed,
+	   emit a stop event for that. */
+
+	if (button_pressed != 0 && moved) {
+		call_unless_null(ev_drag_stop, (struct input_event_drag_stop){
+			.button = button_pressed
+		});
+	}
+
+	/* store state only.
+	   we do not yet know if this is a drag or a click. */
+
 	button_pressed = ev.xbutton.button;
 	moved = 0;
 
@@ -89,15 +101,23 @@ static void xev_press(XEvent ev) {
 }
 
 static void xev_release(XEvent ev) {
-	if (!moved) {
+	/* don't emit a release event with no button.
+	   this might happen after pressing multiple buttons at once,
+	   which is not planned to be handled. */
+
+	if (button_pressed == 0) {
+		return;
+	}
+
+	if (moved) {
+		call_unless_null(ev_drag_stop, (struct input_event_drag_stop){
+			.button = button_pressed
+		});
+	} else {
 		call_unless_null(ev_click, (struct input_event_click){
 			.button = button_pressed,
 			.x      = ev.xbutton.x,
 			.y      = ev.xbutton.y,
-		});
-	} else {
-		call_unless_null(ev_drag_stop, (struct input_event_drag_stop){
-			.button = button_pressed
 		});
 	}
 
@@ -105,38 +125,40 @@ static void xev_release(XEvent ev) {
 }
 
 static void xev_motion(XEvent ev) {
-	if (button_pressed) {
-		if (!moved) {
-			moved = 1;
-			call_unless_null(ev_drag_start, (struct input_event_drag_start){
-				.button = button_pressed,
-				.start_x = drag_start_x,
-				.start_y = drag_start_y,
-			});
-		}
-
-		/* pointer warping
-		   XXX */
-
-		/* update pointer movement limits.
-		   have to do it before calling the handler, because it may
-		   update the limits. */
-		/* XXX input_set_drag_limits(
-			drag_limit_xneg + */
-
-		call_unless_null(ev_drag_update, (struct input_event_drag_update){
-			.button = button_pressed,
-			.start_x = drag_start_x,
-			.start_y = drag_start_y,
-			.pointer_x = ev.xmotion.x + drag_warped_x, /* TODO pointer warping */
-			.pointer_y = ev.xmotion.y + drag_warped_y, /* dito */
-		});
-	} else {
+	if (button_pressed == 0) {
 		call_unless_null(ev_hover, (struct input_event_hover){
 			.x = ev.xmotion.x,
 			.y = ev.xmotion.y
 		});
+
+		return;
 	}
+
+	if (!moved) {
+		moved = 1;
+		call_unless_null(ev_drag_start, (struct input_event_drag_start){
+			.button = button_pressed,
+			.start_x = drag_start_x,
+			.start_y = drag_start_y,
+		});
+	}
+
+	/* pointer warping
+	   XXX */
+
+	/* update pointer movement limits.
+	   have to do it before calling the handler, because it may
+	   update the limits. */
+	/* XXX input_set_drag_limits(
+		drag_limit_xneg + */
+
+	call_unless_null(ev_drag_update, (struct input_event_drag_update){
+		.button = button_pressed,
+		.start_x = drag_start_x,
+		.start_y = drag_start_y,
+		.pointer_x = ev.xmotion.x + drag_warped_x, /* TODO pointer warping */
+		.pointer_y = ev.xmotion.y + drag_warped_y, /* dito */
+	});
 
 	drag_last_x = ev.xmotion.x;
 	drag_last_y = ev.xmotion.y;

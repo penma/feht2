@@ -45,7 +45,7 @@ void event_handle_x11(Display *dpy) {
 	XFlush(dpy);
 }
 
-void event_loop(Display *dpy, int ctl_fd) {
+static void event_loop(Display *dpy, int ctl_fd) {
 	int max_fd = x11.fd + 1;
 
 	fd_set fds;
