@@ -22,15 +22,47 @@ Window x11_window;
 int win_width, win_height;
 int view_dirty = 1;
 
-void event_handle_x11(Display *dpy) {
+int scroll_offset = 0;
+static int scroll_offset_start;
+
+static void eh_click(struct input_event_click ev) {
+	fprintf(stderr, "click event: button %d at %d,%d\n",
+		ev.button, ev.x, ev.y);
+}
+
+static void eh_drag_start(struct input_event_drag_start ev) {
+	fprintf(stderr, "drag start: button %d at %d,%d\n",
+		ev.button, ev.start_x, ev.start_y);
+
+	if (ev.button == 1) {
+		scroll_offset_start = scroll_offset;
+	}
+}
+
+static void eh_drag_stop(struct input_event_drag_stop ev) {
+	fprintf(stderr, "drag stop: button %d\n",
+		ev.button);
+}
+
+static void eh_drag_update(struct input_event_drag_update ev) {
+	fprintf(stderr, "drag update: button %d now at %d,%d start %d,%d\n",
+		ev.button, ev.pointer_x, ev.pointer_y, ev.start_x, ev.start_y);
+
+	if (ev.button == 1) {
+		scroll_offset = scroll_offset_start - (ev.pointer_y - ev.start_y);
+		view_dirty = 1;
+	}
+}
+
+static void event_handle_x11(Display *dpy) {
 	XEvent ev;
 
 	while (XPending(dpy)) {
 		XNextEvent(dpy, &ev);
 
-		/* if (input_try_xevent(ev)) {
+		if (input_try_xevent(ev)) {
 			continue;
-		} */
+		}
 
 		if (ev.type == ConfigureNotify) {
 			win_width  = ev.xconfigure.width;
@@ -87,7 +119,10 @@ int main(int argc, char *argv[]) {
 	setup_x11();
 	setup_imlib();
 
-	//input_init();
+	/* setup input foo */
+
+	input_set_click_handler(eh_click);
+	input_set_drag_handlers(eh_drag_start, eh_drag_stop, eh_drag_update);
 
 	/* make window */
 	make_window();

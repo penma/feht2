@@ -12,6 +12,7 @@
 
 extern Window x11_window;
 extern int win_width, win_height;
+extern int scroll_offset;
 
 /* the background image on which everything is drawn. */
 
@@ -83,6 +84,7 @@ void update_view() {
 		int pos_x, pos_y;
 		pos_x = cell_x * thumb_width + hspacing * (cell_x + 1);
 		pos_y = cell_y * (thumb_height + text_height) + vspacing * (cell_y + 1);
+		pos_y -= scroll_offset; // XXX
 
 		/* draw image, if available */
 
