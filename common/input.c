@@ -9,9 +9,9 @@
 
 static int button_pressed = 0;
 static int moved = 0;
-static int drag_start_x,  drag_start_y;
-static int drag_last_x,   drag_last_y;
-static int drag_warped_x, drag_warped_y;
+static struct coord drag_start;
+static struct coord drag_last;
+static struct coord drag_warped;
 
 /* how much movement to ignore, once.
    used when pointer warping. warping the pointer will of course generate
@@ -20,9 +20,7 @@ static int drag_warped_x, drag_warped_y;
    so we store how much we warped, ignore this much movement (and then reset
    the ignore counter). */
 
-static int
-	drag_ignore_x = 0,
-	drag_ignore_y = 0;
+static struct coord drag_ignore = { .x = 0, .y = 0 };
 
 /* limits for pointer movement, from current pointer position.
    will not do pointer warping in some direction if new pointer position
@@ -37,29 +35,29 @@ static int
 /* configured event handlers.
    NULL is allowed and means they're not called. */
 
-static void (*ev_click      )(struct input_event_click)       = NULL;
-static void (*ev_hover      )(struct input_event_hover)       = NULL;
-static void (*ev_drag_start )(struct input_event_drag_start)  = NULL;
-static void (*ev_drag_stop  )(struct input_event_drag_stop)   = NULL;
-static void (*ev_drag_update)(struct input_event_drag_update) = NULL;
+static void (*ev_click      )(int, struct coord)               = NULL;
+static void (*ev_hover      )(     struct coord)               = NULL;
+static void (*ev_drag_start )(int, struct coord)               = NULL;
+static void (*ev_drag_stop  )(int)                             = NULL;
+static void (*ev_drag_update)(int, struct coord, struct coord) = NULL;
 
 /* configure event handlers */
 
 void input_set_drag_handlers(
-	void (*drag_start )(struct input_event_drag_start),
-	void (*drag_stop  )(struct input_event_drag_stop),
-	void (*drag_update)(struct input_event_drag_update)
+	void (*drag_start )(int, struct coord),
+	void (*drag_stop  )(int),
+	void (*drag_update)(int, struct coord, struct coord)
 ) {
 	ev_drag_start  = drag_start;
 	ev_drag_stop   = drag_stop;
 	ev_drag_update = drag_update;
 }
 
-void input_set_click_handler(void (*click)(struct input_event_click)) {
+void input_set_click_handler(void (*click)(int, struct coord)) {
 	ev_click = click;
 }
 
-void input_set_hover_handler(void (*hover)(struct input_event_hover)) {
+void input_set_hover_handler(void (*hover)(struct coord)) {
 	ev_hover = hover;
 }
 
@@ -85,9 +83,9 @@ static void xev_press(XEvent ev) {
 	   emit a stop event for that. */
 
 	if (button_pressed != 0 && moved) {
-		call_unless_null(ev_drag_stop, (struct input_event_drag_stop){
-			.button = button_pressed
-		});
+		call_unless_null(ev_drag_stop,
+			button_pressed
+		);
 	}
 
 	/* store state only.
@@ -96,8 +94,8 @@ static void xev_press(XEvent ev) {
 	button_pressed = ev.xbutton.button;
 	moved = 0;
 
-	drag_start_x = drag_last_x = ev.xbutton.x;
-	drag_start_y = drag_last_y = ev.xbutton.y;
+	drag_start.x = drag_last.x = ev.xbutton.x;
+	drag_start.y = drag_last.y = ev.xbutton.y;
 }
 
 static void xev_release(XEvent ev) {
@@ -110,15 +108,14 @@ static void xev_release(XEvent ev) {
 	}
 
 	if (moved) {
-		call_unless_null(ev_drag_stop, (struct input_event_drag_stop){
-			.button = button_pressed
-		});
+		call_unless_null(ev_drag_stop,
+			button_pressed
+		);
 	} else {
-		call_unless_null(ev_click, (struct input_event_click){
-			.button = button_pressed,
-			.x      = ev.xbutton.x,
-			.y      = ev.xbutton.y,
-		});
+		call_unless_null(ev_click,
+			button_pressed,
+			(struct coord){ .x = ev.xbutton.x, .y = ev.xbutton.y }
+		);
 	}
 
 	button_pressed = 0;
@@ -126,21 +123,19 @@ static void xev_release(XEvent ev) {
 
 static void xev_motion(XEvent ev) {
 	if (button_pressed == 0) {
-		call_unless_null(ev_hover, (struct input_event_hover){
-			.x = ev.xmotion.x,
-			.y = ev.xmotion.y
-		});
+		call_unless_null(ev_hover,
+			(struct coord){ .x = ev.xmotion.x, .y = ev.xmotion.y }
+		);
 
 		return;
 	}
 
 	if (!moved) {
 		moved = 1;
-		call_unless_null(ev_drag_start, (struct input_event_drag_start){
-			.button = button_pressed,
-			.start_x = drag_start_x,
-			.start_y = drag_start_y,
-		});
+		call_unless_null(ev_drag_start,
+			button_pressed,
+			drag_start
+		);
 	}
 
 	/* pointer warping
@@ -152,16 +147,17 @@ static void xev_motion(XEvent ev) {
 	/* XXX input_set_drag_limits(
 		drag_limit_xneg + */
 
-	call_unless_null(ev_drag_update, (struct input_event_drag_update){
-		.button = button_pressed,
-		.start_x = drag_start_x,
-		.start_y = drag_start_y,
-		.pointer_x = ev.xmotion.x + drag_warped_x, /* TODO pointer warping */
-		.pointer_y = ev.xmotion.y + drag_warped_y, /* dito */
-	});
+	call_unless_null(ev_drag_update,
+		button_pressed,
+		drag_start,
+		(struct coord) {
+			.x = ev.xmotion.x + drag_warped.x, /* TODO pointer warping */
+			.y = ev.xmotion.y + drag_warped.y, /* dito */
+		}
+	);
 
-	drag_last_x = ev.xmotion.x;
-	drag_last_y = ev.xmotion.y;
+	drag_last.x = ev.xmotion.x;
+	drag_last.y = ev.xmotion.y;
 }
 
 int input_try_xevent(XEvent ev) {

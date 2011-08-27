@@ -25,31 +25,31 @@ int view_dirty = 1;
 int scroll_offset = 0;
 static int scroll_offset_start;
 
-static void eh_click(struct input_event_click ev) {
+static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
-		ev.button, ev.x, ev.y);
+		button, pos.x, pos.y);
 }
 
-static void eh_drag_start(struct input_event_drag_start ev) {
+static void eh_drag_start(int button, struct coord start) {
 	fprintf(stderr, "drag start: button %d at %d,%d\n",
-		ev.button, ev.start_x, ev.start_y);
+		button, start.x, start.y);
 
-	if (ev.button == 1) {
+	if (button == 1) {
 		scroll_offset_start = scroll_offset;
 	}
 }
 
-static void eh_drag_stop(struct input_event_drag_stop ev) {
+static void eh_drag_stop(int button) {
 	fprintf(stderr, "drag stop: button %d\n",
-		ev.button);
+		button);
 }
 
-static void eh_drag_update(struct input_event_drag_update ev) {
+static void eh_drag_update(int button, struct coord start, struct coord pointer) {
 	fprintf(stderr, "drag update: button %d now at %d,%d start %d,%d\n",
-		ev.button, ev.pointer_x, ev.pointer_y, ev.start_x, ev.start_y);
+		button, pointer.x, pointer.y, start.x, start.y);
 
-	if (ev.button == 1) {
-		scroll_offset = scroll_offset_start - (ev.pointer_y - ev.start_y);
+	if (button == 1) {
+		scroll_offset = scroll_offset_start - (pointer.y - start.y);
 		view_dirty = 1;
 	}
 }
