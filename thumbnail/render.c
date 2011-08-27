@@ -128,7 +128,7 @@ void update_view() {
 
 			int tx, ty;
 			tx = pos_x + (thumb_width - textwidth) / 2;
-			ty = pos_y + thumb_height; /* the 2 is random */
+			ty = pos_y + thumb_height;
 
 			imlib_text_draw(tx, ty, text);
 
