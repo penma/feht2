@@ -114,7 +114,7 @@ static void xev_release(XEvent ev) {
 	} else {
 		call_unless_null(ev_click,
 			button_pressed,
-			coord(ev.xbutton.x, ev.xbutton.y)
+			COORD(ev.xbutton.x, ev.xbutton.y)
 		);
 	}
 
@@ -124,7 +124,7 @@ static void xev_release(XEvent ev) {
 static void xev_motion(XEvent ev) {
 	if (button_pressed == 0) {
 		call_unless_null(ev_hover,
-			coord(ev.xmotion.x, ev.xmotion.y)
+			COORD(ev.xmotion.x, ev.xmotion.y)
 		);
 
 		return;
@@ -150,7 +150,7 @@ static void xev_motion(XEvent ev) {
 	call_unless_null(ev_drag_update,
 		button_pressed,
 		drag_start,
-		coord(
+		COORD(
 			ev.xmotion.x + drag_warped.x, /* TODO pointer warping */
 			ev.xmotion.y + drag_warped.y  /* dito */
 		)

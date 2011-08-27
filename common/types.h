@@ -6,7 +6,7 @@ struct coord {
 	union { int y, height,   vertical; };
 };
 
-static inline struct coord coord(int x, int y) {
+static inline struct coord COORD(int x, int y) {
 	return (struct coord){ .x = x, .y = y };
 }
 
