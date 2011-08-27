@@ -48,8 +48,10 @@ void try_update_thumbnails() {
 	struct thumbnail **p = thumbnails;
 
 	while (*p != NULL) {
-		if (!(*p)->failed &&
-		    ((*p)->width != thumb_width || (*p)->height != thumb_height)) {
+		if (!(*p)->failed && (
+		    (*p)->imlib == NULL ||
+		    (*p)->width != thumb_width ||
+		    (*p)->height != thumb_height)) {
 			/* update */
 
 			struct thumbnail *t = (*p);
