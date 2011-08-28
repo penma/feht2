@@ -49,9 +49,17 @@ struct rect layout_frame_rect_by_number(struct layout *l, int frame) {
 	int col = frame % l->_frames_per_row;
 	int row = frame / l->_frames_per_row;
 
-	r.topleft.x = l->border.horizontal
-	            + 0.5 * l->_frame_spacing
-	            + col * (l->frame.width  + l->_frame_spacing);
+	/* FIXME very large spaces in case there are only a few frames per row */
+
+	if (l->_frames_per_row == 1) {
+		/* if there is only one frame per row, center it */
+
+		r.topleft.x = (l->window.width - l->frame.width) / 2;
+	} else {
+		r.topleft.x = l->border.horizontal
+		            + col * (l->frame.width  + l->_frame_spacing);
+	}
+
 	r.topleft.y = l->border.vertical
 	            + row * (l->frame.height + l->spacing.vertical);
 
@@ -67,18 +75,14 @@ void layout_recompute(struct layout *l) {
 	   frame. */
 
 	int main_width = l->window.width - 2 * l->border.horizontal;
-	int fpr = main_width / (l->frame.width + l->spacing.horizontal);
+	int fpr = (    main_width + l->spacing.horizontal)
+	        / (l->frame.width + l->spacing.horizontal);
 
-	if (fpr < 1) {
-		fpr = 1;
+	if (fpr >= 2) {
+		l->_frame_spacing = (main_width - l->frame.width * fpr) / (double)(fpr - 1);
+		l->_frames_per_row = fpr;
+	} else {
+		l->_frame_spacing = 0;
+		l->_frames_per_row = 1;
 	}
-
-	l->_frame_spacing = (main_width - l->frame.width * fpr) / (double)fpr;
-	l->_frames_per_row = fpr;
-
-	/* FIXME spacing is very uneconomical because it assumes rendering
-	   half the spacing around the view, potentially wasting lots of space.
-	   There should be an explicit workaround for single-column views
-	   instead and otherwise there should not be any spacing on the outside,
-	   that's what border is for. */
 }
