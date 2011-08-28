@@ -19,12 +19,6 @@ int layout_frame_number_by_coordinate(struct layout *l, struct coord probe) {
 
 	for (int f = 0; f < l->frame_count; f++) {
 		struct rect ff = layout_frame_rect_by_number(l, f);
-		fprintf(stderr, "test f %d r %d/%d %dx%d in %d,%d\n",
-			f,
-			ff.topleft.x, ff.topleft.x,
-			ff.dimensions.width, ff.dimensions.height,
-			probe.x, probe.y
-		);
 
 		if (
 			ff.topleft.x <= probe.x &&

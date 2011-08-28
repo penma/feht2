@@ -6,6 +6,8 @@
 
 #include <dirent.h>
 #include <sys/select.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <X11/Xlib.h>
@@ -57,6 +59,35 @@ static void eh_click(int button, struct coord pos) {
 		fprintf(stderr, "clicked at image %d (filename = %s)\n",
 			n,
 			thumbnails[n]->filename);
+
+		/* show image large (hack) */
+
+		if (!fork()) {
+			if (!fork()) {
+				char **varg = malloc(sizeof(char*) * (L->frame_count + 4));
+				int va = 3;
+				int start_at = n;
+				struct thumbnail **p = thumbnails;
+				while (*p != NULL) {
+					struct stat s;
+					stat((*p)->filename, &s);
+					if (S_ISREG(s.st_mode)) {
+						varg[va] = (*p)->filename;
+						va++;
+					}
+					p++;
+				}
+				varg[0] = "feh";
+				varg[1] = "--start-at";
+				varg[2] = thumbnails[n]->filename;
+				varg[va] = NULL;
+
+				execvp("feh", varg);
+				perror("exec");
+				exit(1);
+			}
+			exit(0);
+		}
 	}
 }
 
