@@ -9,6 +9,7 @@
 
 #include "common/x11.h"
 #include "thumbnail/thumbnail.h"
+#include "thumbnail/layout.h"
 
 extern Window x11_window;
 extern int win_width, win_height;
@@ -68,23 +69,37 @@ void update_view() {
 
 	/* render all the thumbnails. */
 
-	int cell_x = 0, cell_y = 0;
-	int max_cell_x = win_width / thumb_width;
-	double hspacing = (win_width - (max_cell_x * thumb_width)) / (double)(max_cell_x + 1);
-	double vspacing = 20.0;
-	double text_height = 12.0;
+	/* XXX construct layout elsewhere */
+	struct layout *L = layout_new();
+	L->window  = COORD(win_width, win_height);
+	L->border  = COORD(0, 0);
+	L->spacing = COORD(0, 20);
+	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
+
+	{
+		L->frame_count = 0;
+		struct thumbnail **p = thumbnails;
+		while (*p != NULL) {
+			p++;
+			L->frame_count++;
+		}
+	}
+
+	layout_recompute(L);
 
 	struct thumbnail **p = thumbnails;
 
+	int frame_num = 0;
 	while (*p != NULL) {
 		struct thumbnail *t = (*p);
+
+		struct rect frame_rect = layout_frame_rect_by_number(L, frame_num);
 
 		/* cell origin, spacings included */
 
 		int pos_x, pos_y;
-		pos_x = cell_x * thumb_width + hspacing * (cell_x + 1);
-		pos_y = cell_y * (thumb_height + text_height) + vspacing * (cell_y + 1);
-		pos_y -= scroll_offset; // XXX
+		pos_x = frame_rect.topleft.x;
+		pos_y = frame_rect.topleft.y - scroll_offset; // XXX
 
 		/* draw image, if available */
 
@@ -92,7 +107,8 @@ void update_view() {
 			imlib_blend_image_onto_image(t->imlib, 1,
 				/* sxywh */ 0, 0, t->width, t->height,
 				/* dxywh */
-					pos_x, pos_y,
+					pos_x + (frame_rect.dimensions.width - thumb_width) / 2,
+					pos_y,
 					thumb_width, thumb_height
 			);
 		}
@@ -127,7 +143,7 @@ void update_view() {
 			imlib_get_text_size(text, &textwidth, &textheight);
 
 			int tx, ty;
-			tx = pos_x + (thumb_width - textwidth) / 2;
+			tx = pos_x + (frame_rect.dimensions.width - textwidth) / 2;
 			ty = pos_y + thumb_height;
 
 			imlib_text_draw(tx, ty, text);
@@ -135,16 +151,8 @@ void update_view() {
 			free(text);
 		}
 
-		/* update cell pos */
-
-		cell_x++;
-
-		if (cell_x >= max_cell_x) {
-			cell_x = 0;
-			cell_y++;
-		}
-
 		p++;
+		frame_num++;
 	}
 
 	/* transfer the image to the window */

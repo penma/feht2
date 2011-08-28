@@ -15,8 +15,11 @@
 #include "common/input.h"
 #include "common/x11.h"
 
+#include "thumbnail/layout.h"
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/render.h"
+
+extern int thumb_width, thumb_height;
 
 Window x11_window;
 int win_width, win_height;
@@ -28,6 +31,33 @@ static int scroll_offset_start;
 static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
 		button, pos.x, pos.y);
+
+	/* XXX construct layout elsewhere */
+	struct layout *L = layout_new();
+	L->window  = COORD(win_width, win_height);
+	L->border  = COORD(0, 0);
+	L->spacing = COORD(0, 20);
+	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
+
+	{
+		L->frame_count = 0;
+		struct thumbnail **p = thumbnails;
+		while (*p != NULL) {
+			p++;
+			L->frame_count++;
+		}
+	}
+
+	layout_recompute(L);
+
+	int n = layout_frame_number_by_coordinate(L, COORD(pos.x, pos.y + scroll_offset));
+	if (n == -1) {
+		fputs("... no image there.\n", stderr);
+	} else {
+		fprintf(stderr, "clicked at image %d (filename = %s)\n",
+			n,
+			thumbnails[n]->filename);
+	}
 }
 
 static void eh_drag_start(int button, struct coord start) {
