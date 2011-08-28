@@ -50,42 +50,29 @@ struct rect layout_frame_rect_by_number(struct layout *l, int frame) {
 	int row = frame / l->_frames_per_row;
 
 	r.topleft.x = l->border.horizontal
-	            +  col      * l->_frame_layout_width
-	            + (col - 1) * l->spacing.horizontal;
+	            + 0.5 * l->_frame_spacing
+	            + col * (l->frame.width  + l->_frame_spacing);
 	r.topleft.y = l->border.vertical
-	            +  row      * l->frame.height
-	            + (row - 1) * l->spacing.vertical;
+	            + row * (l->frame.height + l->spacing.vertical);
 
-	/* dimensions of the frame
-	   width is computed, height is predefined. */
-
-	r.dimensions = COORD(l->_frame_width, l->frame.height);
+	r.dimensions = l->frame;
 
 	return r;
 }
 
 void layout_recompute(struct layout *l) {
-	/* calculate the real frame sizes.
-	   as the .frame field only specifies a minimal width we need to
-	   calculate the real available width given a fixed spacing.
-	   frame width should be the same for all frames and not vary every
-	   second frame because of rounding. better increase the spacing.
-	   frame layout width is used to calculate horizontal position of
-	   a frame, and therefore is floating point. */
+	/* calculate frame spacing.
+	   in the horizontal direction, spacing specifies a minimal spacing
+	   but it may be larger because the window can't fit another full
+	   frame. */
 
-	int main_width = l->window.width
-	           - 2 * l->border.horizontal
-	           +     l->spacing.horizontal;
+	int main_width = l->window.width - 2 * l->border.horizontal;
 	int fpr = main_width / (l->frame.width + l->spacing.horizontal);
-	l->_frame_layout_width = (main_width - l->spacing.horizontal * fpr) / (double)fpr;
-	l->_frame_width = l->_frame_layout_width;
-	l->_frames_per_row = fpr;
 
-	/* the above produces invalid numbers if the window is too narrow. */
-
-	if (fpr == 0) {
-		l->_frames_per_row = 1;
-		l->_frame_layout_width = l->window.width;
-		l->_frame_width = l->window.width;
+	if (fpr < 1) {
+		fpr = 1;
 	}
+
+	l->_frame_spacing = (main_width - l->frame.width * fpr) / (double)fpr;
+	l->_frames_per_row = fpr;
 }

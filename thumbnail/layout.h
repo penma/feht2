@@ -12,8 +12,7 @@ struct layout {
 	int frame_count;
 
 	int _frames_per_row;
-	int _frame_width;
-	double _frame_layout_width;
+	double _frame_spacing;
 };
 
 struct layout *layout_new();

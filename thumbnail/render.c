@@ -72,8 +72,8 @@ void update_view() {
 	/* XXX construct layout elsewhere */
 	struct layout *L = layout_new();
 	L->window  = COORD(win_width, win_height);
-	L->border  = COORD(0, 0);
-	L->spacing = COORD(0, 20);
+	L->border  = COORD(20, 20);
+	L->spacing = COORD(20, 20);
 	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
 
 	{
