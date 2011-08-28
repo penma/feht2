@@ -75,4 +75,10 @@ void layout_recompute(struct layout *l) {
 
 	l->_frame_spacing = (main_width - l->frame.width * fpr) / (double)fpr;
 	l->_frames_per_row = fpr;
+
+	/* FIXME spacing is very uneconomical because it assumes rendering
+	   half the spacing around the view, potentially wasting lots of space.
+	   There should be an explicit workaround for single-column views
+	   instead and otherwise there should not be any spacing on the outside,
+	   that's what border is for. */
 }
