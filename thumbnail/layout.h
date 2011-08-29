@@ -6,7 +6,6 @@
 struct layout {
 	struct coord
 		window,  /* window dimensions */
-		border,  /* border around windows */
 		spacing, /* spacing between frames */
 		frame;   /* frame dimension (w = minimal) */
 	int frame_count;

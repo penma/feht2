@@ -37,7 +37,6 @@ static void eh_click(int button, struct coord pos) {
 	/* XXX construct layout elsewhere */
 	struct layout *L = layout_new();
 	L->window  = COORD(win_width, win_height);
-	L->border  = COORD(20, 20);
 	L->spacing = COORD(20, 20);
 	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
 
