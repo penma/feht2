@@ -30,6 +30,8 @@ int view_dirty = 1;
 int scroll_offset = 0;
 static int scroll_offset_start;
 
+static int thumb_w_start, thumb_h_start;
+
 static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
 		button, pos.x, pos.y);
@@ -96,6 +98,9 @@ static void eh_drag_start(int button, struct coord start) {
 
 	if (button == 1) {
 		scroll_offset_start = scroll_offset;
+	} else if (button == 2) {
+		thumb_w_start = thumb_width;
+		thumb_h_start = thumb_height;
 	}
 }
 
@@ -110,6 +115,10 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 
 	if (button == 1) {
 		scroll_offset = scroll_offset_start - (pointer.y - start.y);
+		view_dirty = 1;
+	} else if (button == 2) {
+		thumb_width  = thumb_w_start + (pointer.x - start.x);
+		thumb_height = thumb_h_start + (pointer.y - start.y);
 		view_dirty = 1;
 	}
 }
