@@ -8,7 +8,10 @@ struct layout {
 		window,  /* window dimensions */
 		spacing, /* spacing between frames */
 		frame;   /* frame dimension (w = minimal) */
+	int border_vert;
 	int frame_count;
+
+	int total_height;
 
 	int _frames_per_row;
 	double _frame_spacing;

@@ -71,9 +71,10 @@ void update_view() {
 
 	/* XXX construct layout elsewhere */
 	struct layout *L = layout_new();
-	L->window  = COORD(win_width, win_height);
-	L->spacing = COORD(20, 20);
-	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
+	L->window      = COORD(win_width, win_height);
+	L->border_vert = 20;
+	L->spacing     = COORD(20, 20);
+	L->frame       = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
 
 	{
 		L->frame_count = 0;
@@ -153,6 +154,9 @@ void update_view() {
 		p++;
 		frame_num++;
 	}
+
+	imlib_context_set_color(255, 255, 255, 255);
+	imlib_image_draw_line(0, L->total_height - scroll_offset, L->window.width, L->total_height - scroll_offset, 0);
 
 	/* transfer the image to the window */
 
