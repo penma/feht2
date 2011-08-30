@@ -143,7 +143,22 @@ static void event_handle_x11(Display *dpy) {
 		} else if (ev.type == Expose) {
 			view_dirty = 1;
 		} else {
-			fprintf(stderr, "unknown X event type %d\n", ev.type);
+			const char *event_names[] = { "", "",
+				"KeyPress"        ,"KeyRelease"      ,"ButtonPress"    ,"ButtonRelease",  /* 02..05 */
+				"MotionNotify"    ,"EnterNotify"     ,"LeaveNotify"    ,"FocusIn",        /* 06..09 */
+				"FocusOut"        ,"KeymapNotify"    ,"Expose"         ,"GraphicsExpose", /* 10..13 */
+				"NoExpose"        ,"VisibilityNotify","CreateNotify"   ,"DestroyNotify",  /* 14..17 */
+				"UnmapNotify"     ,"MapNotify"       ,"MapRequest"     ,"ReparentNotify", /* 18..21 */
+				"ConfigureNotify" ,"ConfigureRequest","GravityNotify"  ,"ResizeRequest",  /* 22..25 */
+				"CirculateNotify" ,"CirculateRequest","PropertyNotify" ,"SelectionClear", /* 26..29 */
+				"SelectionRequest","SelectionNotify" ,"ColormapNotify" ,"ClientMessage",  /* 30..33 */
+				"MappingNotify"   ,"GenericEvent"                                         /* 34..35 */
+			};
+
+			fprintf(stderr, "[*] unhandled X event type %d (%s)\n",
+				ev.type,
+				((ev.type >= 2 && ev.type <= 35) ? event_names[ev.type] : "?")
+			);
 		}
 	}
 
