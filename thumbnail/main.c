@@ -140,6 +140,8 @@ static void event_handle_x11(Display *dpy) {
 			win_height = ev.xconfigure.height;
 
 			view_dirty = 1;
+		} else if (ev.type == Expose) {
+			view_dirty = 1;
 		} else {
 			fprintf(stderr, "unknown X event type %d\n", ev.type);
 		}
