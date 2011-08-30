@@ -7,7 +7,6 @@ struct layout *layout_new() {
 	struct layout *l = malloc(sizeof(struct layout));
 
 	l->frame_count = 0;
-	l->border_vert = 0;
 	l->window  = COORD(0, 0);
 	l->spacing = COORD(0, 0);
 	l->frame   = COORD(0, 0);
@@ -52,8 +51,8 @@ struct rect layout_frame_rect_by_number(struct layout *l, int frame) {
 
 	r.topleft.x = (col + 1) * l->_frame_spacing
 	            +  col      * l->frame.width;
-	r.topleft.y = row * (l->frame.height + l->spacing.vertical)
-	            + l->border_vert;
+	r.topleft.y = (row + 1) * l->spacing.vertical
+	            +  row      * l->frame.height;
 
 	r.dimensions = l->frame;
 
@@ -80,7 +79,6 @@ void layout_recompute(struct layout *l) {
 
 	int rows = ceil(l->frame_count / (double)fpr);
 
-	l->total_height = 2 * l->border_vert
-	                +  rows      * l->frame.height
-	                + (rows - 1) * l->spacing.vertical;
+	l->total_height =  rows      * l->frame.height
+	                + (rows + 1) * l->spacing.vertical;
 }
