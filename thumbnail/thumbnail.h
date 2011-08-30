@@ -13,6 +13,6 @@ struct thumbnail {
 extern struct thumbnail **thumbnails;
 
 struct thumbnail *find_thumbnail_by_name(char *);
-void try_update_thumbnails();
+int try_update_thumbnails();
 
 #endif

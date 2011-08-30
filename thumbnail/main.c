@@ -27,6 +27,8 @@ Window x11_window;
 int win_width, win_height;
 int view_dirty = 1;
 
+static int must_update = 0;
+
 int scroll_offset = 0;
 static int scroll_offset_start;
 
@@ -156,22 +158,33 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		FD_ZERO(&fds);
 		FD_SET(x11.fd, &fds);
 
-		// fputs("wait for something to happen.\n", stderr);
-		ret = select(max_fd, &fds, NULL, NULL, NULL);
+		ret = select(max_fd, &fds, NULL, NULL, must_update ? &(struct timeval){ 0, 0 } : NULL);
 
 		if (ret == -1) {
 			perror("select"); /* XXX */
 		}
 
-		if (FD_ISSET(x11.fd, &fds)) {
-			// fputs("activity on X11 connection\n", stderr);
+		/* sometimes, especially during thumbnail updating, we do not
+		   see activity on the FD even though there are events available.
+		   I think this happens after a redraw followed by XFlush, which
+		   makes Xlib poll the FD for events. So by the time we call
+		   select here, they're already read.
+		   We can use XPending to find out about that. When not updating
+		   thumbnails, new events still trigger the FD select, so we use
+		   that to wake up. */
+
+		if (FD_ISSET(x11.fd, &fds) || XPending(dpy)) {
 			event_handle_x11(dpy);
 		}
 
-		try_update_thumbnails();
+		must_update = try_update_thumbnails();
+		if (must_update) { /* HACK. but if it's 1, something was indeed updated */
+			view_dirty = 1;
+		}
 
 		if (view_dirty) {
 			update_view();
+			view_dirty = 0;
 		}
 
 		XFlush(dpy);
@@ -221,6 +234,8 @@ int main(int argc, char *argv[]) {
 	free(dir_entries);
 
 	thumbnails[dir_count] = NULL;
+
+	must_update = 1;
 
 	event_loop(x11.display, 0); /* 0 = stdin */
 }

@@ -48,6 +48,15 @@ static void ensure_window_imlib() {
 			imlib_free_image_and_decache();
 		}
 
+		/* we might not know the window size yet, but create
+		   a window anyway. (FIXME?) */
+
+		if (win_width == 0)
+			win_width = 1;
+
+		if (win_height == 0)
+			win_height = 1;
+
 		window_imlib = imlib_create_image(win_width, win_height);
 		window_imlib_width  = win_width;
 		window_imlib_height = win_height;

@@ -21,9 +21,9 @@ struct thumbnail *find_thumbnail_by_name(char *filename) {
 	return NULL;
 }
 
-void try_update_thumbnails() {
+int try_update_thumbnails() {
 	if (thumbnails == NULL) {
-		return;
+		return 0;
 	}
 
 	struct thumbnail **p = thumbnails;
@@ -52,7 +52,7 @@ void try_update_thumbnails() {
 				fprintf(stderr, "error trying to load %s: %s\n", t->filename, errmsg);
 				t->failed = 1;
 
-				return;
+				return 1;
 			}
 
 			imlib_context_set_image(orig);
@@ -101,10 +101,12 @@ void try_update_thumbnails() {
 
 			/* update no more than one */
 
-			return;
+			return 1;
 		}
 
 		p++;
 	}
+
+	return 0;
 }
 
