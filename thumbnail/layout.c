@@ -39,7 +39,7 @@ struct rect layout_frame_rect_by_number(struct layout *l, int frame) {
 	   which does need to respect the frame count, to prevent returning
 	   an invalid frame id. */
 
-	if (frame > l->frame_count) {
+	if (frame >= l->frame_count) {
 		return RECT(COORD(0, 0), COORD(0, 0));
 	}
 
