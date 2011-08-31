@@ -95,6 +95,12 @@ void update_view() {
 
 	layout_recompute(L);
 
+	/* XXX compute this or even return list from layout? */
+	struct rect onscreen = RECT(
+		COORD(0, scroll_offset),
+		COORD(L->window.width, L->window.height)
+	);
+
 	struct thumbnail **p = thumbnails;
 
 	int frame_num = 0;
@@ -102,6 +108,15 @@ void update_view() {
 		struct thumbnail *t = (*p);
 
 		struct rect frame_rect = layout_frame_rect_by_number(L, frame_num);
+
+		if (!rect_intersect(frame_rect, onscreen)) {
+			/* FIXME meh, code duplication */
+			p++;
+			frame_num++;
+			continue;
+		}
+
+		fprintf(stderr, "[+] %s\n", (*p)->filename);
 
 		/* cell origin, spacings included */
 

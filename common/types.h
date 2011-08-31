@@ -19,4 +19,6 @@ static inline struct rect RECT(struct coord tl, struct coord dim) {
 	return (struct rect){ .topleft = tl, .dimensions = dim };
 }
 
+int rect_intersect(struct rect r1, struct rect r2);
+
 #endif
