@@ -7,6 +7,7 @@ struct thumbnail {
 	char *filename;
 	Imlib_Image imlib;
 	int width, height;
+	int size;
 	int failed;
 };
 

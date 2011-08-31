@@ -12,6 +12,10 @@ int thumb_width = 200, thumb_height = 150;
 struct thumbnail **thumbnails = NULL;
 extern int scroll_offset, win_width, win_height;
 
+static int max(int a, int b) {
+	return a > b ? a : b;
+}
+
 struct thumbnail *find_thumbnail_by_name(char *filename) {
 	struct thumbnail **p = thumbnails;
 	while (*p != NULL) {
@@ -21,6 +25,18 @@ struct thumbnail *find_thumbnail_by_name(char *filename) {
 		p++;
 	}
 	return NULL;
+}
+
+static int thumb_size_for_frame(struct coord frame_dim) {
+	int longer = max(frame_dim.width, frame_dim.height);
+
+	if (longer <= 128) {
+		return 128;
+	} else if (longer <= 256) {
+		return 256;
+	} else {
+		return 512;
+	}
 }
 
 static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *layout) {
@@ -46,8 +62,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed                         &&
 			(
 				(*p)->imlib  == NULL          ||
-				(*p)->width  != thumb_width   ||
-				(*p)->height != thumb_height
+				(*p)->size   != thumb_size_for_frame(COORD(thumb_width, thumb_height))
 			)
 		) {
 			return (*p);
@@ -67,8 +82,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed                         &&
 			(
 				(*p)->imlib  == NULL          ||
-				(*p)->width  != thumb_width   ||
-				(*p)->height != thumb_height
+				(*p)->size   != thumb_size_for_frame(COORD(thumb_width, thumb_height))
 			)
 		) {
 			return (*p);
@@ -81,6 +95,54 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 	/* none! */
 
 	return NULL;
+}
+
+static Imlib_Image generate_thumbnail(const char *filename, int size) {
+	fprintf(stderr, "[*] generating %dx%d thumbnail of %s\n",
+		size, size, filename);
+
+	/* load image */
+
+	Imlib_Load_Error err;
+	Imlib_Image orig = imlib_load_image_with_error_return(filename, &err);
+
+	if (orig == NULL) {
+		const char *errmsg = imlib_load_error_string(err);
+		fprintf(stderr, "[-] error trying to load %s: %s\n", filename, errmsg);
+
+		return NULL; /* XXX do what with error message? extra param? */
+	}
+
+	imlib_context_set_image(orig);
+
+	struct coord image_dim = COORD(
+		imlib_image_get_width(),
+		imlib_image_get_height()
+	);
+
+	/* make thumbnail, but without upscaling smaller images. */
+
+	struct coord thumb_dim = coord_downscale_to_fit(image_dim, COORD(size, size));
+
+	Imlib_Image thumb = imlib_create_cropped_scaled_image(0, 0,
+		image_dim.width, image_dim.height,
+		thumb_dim.width, thumb_dim.height
+	);
+
+	/* can free original image now */
+
+	imlib_context_set_image(orig);
+	imlib_free_image();
+
+	/* done */
+
+	if (thumb == NULL) {
+		fprintf(stderr, "[-] error trying to downscale %s\n", filename);
+
+		return NULL;
+	}
+
+	return thumb;
 }
 
 int try_update_thumbnails() {
@@ -107,67 +169,23 @@ int try_update_thumbnails() {
 		return 0;
 	}
 
-	fprintf(stderr, "trying to update thumbnail for %s\n", t->filename);
+	/* size we need */
+
+	int size = thumb_size_for_frame(COORD(thumb_width, thumb_height));
+
+	/* update it */
+
+	t->imlib = generate_thumbnail(t->filename, size);
 
 	if (t->imlib != NULL) {
 		imlib_context_set_image(t->imlib);
-		imlib_free_image_and_decache();
-	}
-
-	Imlib_Load_Error err;
-	Imlib_Image orig = imlib_load_image_with_error_return(t->filename, &err);
-
-	if (orig == NULL) {
-		const char *errmsg = imlib_load_error_string(err);
-		fprintf(stderr, "error trying to load %s: %s\n", t->filename, errmsg);
+		t->width  = imlib_image_get_width();
+		t->height = imlib_image_get_height();
+		t->size   = size;
+	} else {
 		t->failed = 1;
-
-		return 1;
 	}
 
-	imlib_context_set_image(orig);
-	int width  = imlib_image_get_width();
-	int height = imlib_image_get_height();
-
-	/* compute size and position of the preview inside the thumb frame */
-
-	int dw, dh, dx, dy;
-
-	dw = width < thumb_width ? width : thumb_width;
-	dh = dw * (double)height / width;
-
-	if (dh > thumb_height) {
-		dh = thumb_height;
-		dw = dh * (double)width / height;
-	}
-
-	dx = (thumb_width  - dw) / 2;
-	dy = (thumb_height - dh) / 2;
-
-	/* create the thumbnail */
-
-	t->imlib = imlib_create_image(thumb_width, thumb_height);
-	imlib_context_set_image(t->imlib);
-	imlib_image_set_has_alpha(1);
-
-	imlib_context_set_blend(0);
-	imlib_context_set_color(0, 0, 0, 0);
-	imlib_image_fill_rectangle(0, 0, thumb_width, thumb_height);
-	imlib_context_set_blend(1);
-
-	imlib_blend_image_onto_image(
-		orig, 1,
-		0, 0, width, height,
-		dx, dy, dw, dh
-	);
-
-	t->width  = thumb_width;
-	t->height = thumb_height;
-
-	/* can free original image now */
-
-	imlib_context_set_image(orig);
-	imlib_free_image();
 
 	/* update no more than one */
 

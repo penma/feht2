@@ -117,7 +117,7 @@ void update_view() {
 			continue;
 		}
 
-		fprintf(stderr, "[+] %s\n", (*p)->filename);
+		// fprintf(stderr, "[+] %s\n", (*p)->filename);
 
 		/* cell origin, spacings included */
 
@@ -128,12 +128,17 @@ void update_view() {
 		/* draw image, if available */
 
 		if (t->imlib != NULL && !t->failed) {
+			struct coord render_dim = coord_scale_to_fit(
+				COORD(t->width, t->height),
+				COORD(thumb_width, thumb_height)
+			);
+
 			imlib_blend_image_onto_image(t->imlib, 1,
 				/* sxywh */ 0, 0, t->width, t->height,
 				/* dxywh */
-					pos_x + (frame_rect.dimensions.width - thumb_width) / 2,
-					pos_y,
-					thumb_width, thumb_height
+					pos_x + (thumb_width  - render_dim.width ) / 2,
+					pos_y + (thumb_height - render_dim.height) / 2,
+					render_dim.width, render_dim.height
 			);
 		}
 
