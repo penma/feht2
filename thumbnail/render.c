@@ -14,6 +14,7 @@
 extern Window x11_window;
 extern int win_width, win_height;
 extern int scroll_offset;
+extern int zooming;
 
 /* the background image on which everything is drawn. */
 
@@ -172,6 +173,19 @@ void update_view() {
 			imlib_text_draw(tx, ty, text);
 
 			free(text);
+		}
+
+		/* FIXME (global vars etc)
+		   when resizing thumbs, draw borders to make the change more
+		   easily visible. */
+
+		if (zooming) {
+			imlib_image_draw_rectangle(
+				frame_rect.topleft.x,
+				frame_rect.topleft.y - scroll_offset,
+				frame_rect.dimensions.x,
+				frame_rect.dimensions.y
+			);
 		}
 
 		p++;

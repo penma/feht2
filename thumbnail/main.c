@@ -29,6 +29,8 @@ int view_dirty = 1;
 
 static int must_update = 0;
 
+int zooming = 0;
+
 int scroll_offset = 0;
 static int scroll_offset_start;
 
@@ -101,6 +103,7 @@ static void eh_drag_start(int button, struct coord start) {
 	if (button == 1) {
 		scroll_offset_start = scroll_offset;
 	} else if (button == 2) {
+		zooming = 1;
 		thumb_w_start = thumb_width;
 		thumb_h_start = thumb_height;
 	}
@@ -109,6 +112,10 @@ static void eh_drag_start(int button, struct coord start) {
 static void eh_drag_stop(int button) {
 	fprintf(stderr, "drag stop: button %d\n",
 		button);
+
+	if (button == 2) {
+		zooming = 0;
+	}
 }
 
 static void eh_drag_update(int button, struct coord start, struct coord pointer) {
