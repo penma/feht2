@@ -128,6 +128,7 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 	} else if (button == 2) {
 		thumb_width  = thumb_w_start + (pointer.x - start.x);
 		thumb_height = thumb_h_start + (pointer.y - start.y);
+		fprintf(stderr, "thumb size now %dx%d\n", thumb_width, thumb_height);
 		view_dirty = 1;
 	}
 }
