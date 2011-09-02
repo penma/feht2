@@ -10,6 +10,7 @@
 #include "common/x11.h"
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/layout.h"
+#include "thumbnail/frame.h"
 
 extern Window x11_window;
 extern int win_width, win_height;
@@ -83,7 +84,7 @@ void update_view() {
 	struct layout *L = layout_new();
 	L->window  = COORD(win_width, win_height);
 	L->spacing = COORD(20, 20);
-	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
+	L->frame   = symbols_framesize(COORD(thumb_width, thumb_height));
 
 	{
 		L->frame_count = 0;
@@ -119,66 +120,10 @@ void update_view() {
 
 		// fprintf(stderr, "[+] %s\n", (*p)->filename);
 
-		/* cell origin, spacings included */
+		struct rect render_rect = frame_rect;
+		render_rect.topleft.y -= scroll_offset; // XXX
 
-		int pos_x, pos_y;
-		pos_x = frame_rect.topleft.x;
-		pos_y = frame_rect.topleft.y - scroll_offset; // XXX
-
-		/* draw image, if available */
-
-		if (t->imlib != NULL && !t->failed) {
-			struct coord render_dim = coord_scale_to_fit(
-				COORD(t->width, t->height),
-				COORD(thumb_width, thumb_height)
-			);
-
-			imlib_blend_image_onto_image(t->imlib, 1,
-				/* sxywh */ 0, 0, t->width, t->height,
-				/* dxywh */
-					pos_x + (thumb_width  - render_dim.width ) / 2,
-					pos_y + (thumb_height - render_dim.height) / 2,
-					render_dim.width, render_dim.height
-			);
-		}
-
-		/* TODO draw text */
-
-		imlib_add_path_to_font_path("/usr/share/fonts/truetype/freefont");
-		Imlib_Font font = imlib_load_font("FreeSans/10");
-
-		if (font != NULL) {
-			imlib_context_set_font(font);
-			imlib_context_set_color(255, 255, 255, 255);
-
-			/* text to render */
-
-			char *basename = strrchr(t->filename, '/');
-			if (basename == NULL) {
-				basename = t->filename;
-			} else {
-				basename++; /* skip the '/' */
-			}
-
-			/* build text. TODO shorten if too long. */
-
-			char *text = malloc(sizeof(char) * (strlen(basename) + 1));
-
-			strcpy(text, basename);
-
-			/* and render it */
-
-			int textwidth, textheight;
-			imlib_get_text_size(text, &textwidth, &textheight);
-
-			int tx, ty;
-			tx = pos_x + (frame_rect.dimensions.width - textwidth) / 2;
-			ty = pos_y + thumb_height;
-
-			imlib_text_draw(tx, ty, text);
-
-			free(text);
-		}
+		symbols_render(render_rect, t);
 
 		/* FIXME (global vars etc)
 		   when resizing thumbs, draw borders to make the change more
@@ -186,10 +131,10 @@ void update_view() {
 
 		if (zooming) {
 			imlib_image_draw_rectangle(
-				frame_rect.topleft.x,
-				frame_rect.topleft.y - scroll_offset,
-				frame_rect.dimensions.x,
-				frame_rect.dimensions.y
+				render_rect.topleft.x,
+				render_rect.topleft.y,
+				render_rect.dimensions.x,
+				render_rect.dimensions.y
 			);
 		}
 
