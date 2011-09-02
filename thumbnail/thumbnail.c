@@ -59,10 +59,10 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 
 		if (
 			rect_intersect(frame_rect, on_screen) &&
-			!(*p)->failed                         &&
+			!(*p)->failed &&
 			(
-				(*p)->imlib  == NULL          ||
-				(*p)->size   != thumb_size_for_frame(COORD(thumb_width, thumb_height))
+				(*p)->imlib == NULL ||
+				(*p)->size  != thumb_size_for_frame(COORD(thumb_width, thumb_height))
 			)
 		) {
 			return (*p);
@@ -79,10 +79,10 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 
 	while (*p != NULL) {
 		if (
-			!(*p)->failed                         &&
+			!(*p)->failed &&
 			(
-				(*p)->imlib  == NULL          ||
-				(*p)->size   != thumb_size_for_frame(COORD(thumb_width, thumb_height))
+				(*p)->imlib == NULL ||
+				(*p)->size  != thumb_size_for_frame(COORD(thumb_width, thumb_height))
 			)
 		) {
 			return (*p);
