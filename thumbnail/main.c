@@ -71,7 +71,6 @@ static void eh_click(int button, struct coord pos) {
 			if (!fork()) {
 				char **varg = malloc(sizeof(char*) * (L->frame_count + 4));
 				int va = 3;
-				int start_at = n;
 				struct thumbnail **p = thumbnails;
 				while (*p != NULL) {
 					struct stat s;
