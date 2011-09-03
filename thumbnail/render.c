@@ -81,10 +81,14 @@ void update_view() {
 	/* render all the thumbnails. */
 
 	/* XXX construct layout elsewhere */
+
+	struct frame *F = frame_new_symbols();
+	F->thumbnail_size = COORD(thumb_width, thumb_height);
+
 	struct layout *L = layout_new();
 	L->window  = COORD(win_width, win_height);
 	L->spacing = COORD(20, 20);
-	L->frame   = symbols_framesize(COORD(thumb_width, thumb_height));
+	L->frame   = F->frame_size(F);
 
 	{
 		L->frame_count = 0;
@@ -123,7 +127,7 @@ void update_view() {
 		struct rect render_rect = frame_rect;
 		render_rect.topleft.y -= scroll_offset; // XXX
 
-		symbols_render(render_rect, t);
+		F->render(F, t, render_rect);
 
 		/* FIXME (global vars etc)
 		   when resizing thumbs, draw borders to make the change more

@@ -6,6 +6,7 @@
 
 #include "common/imlib_error.h"
 #include "thumbnail/thumbnail.h"
+#include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
 
 int thumb_width = 200, thumb_height = 150;
@@ -147,10 +148,13 @@ static Imlib_Image generate_thumbnail(const char *filename, int size) {
 
 int try_update_thumbnails() {
 	/* XXX construct layout elsewhere */
+	struct frame *F = frame_new_symbols();
+	F->thumbnail_size = COORD(thumb_width, thumb_height);
+
 	struct layout *L = layout_new();
 	L->window  = COORD(win_width, win_height);
 	L->spacing = COORD(20, 20);
-	L->frame   = COORD(thumb_width, thumb_height + 12); /* text height, XXX */
+	L->frame   = F->frame_size(F);
 
 	{
 		L->frame_count = 0;

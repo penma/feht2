@@ -5,8 +5,13 @@
 
 #include "thumbnail/thumbnail.h"
 
-/* XXX API, see .c */
-/* static */ void symbols_render(struct rect, struct thumbnail *);
-/* static */ struct coord symbols_framesize(struct coord);
+struct frame {
+	struct coord thumbnail_size;
+
+	void (*render)(struct frame *, struct thumbnail *, struct rect);
+	struct coord (*frame_size)(struct frame *);
+};
+
+struct frame *frame_new_symbols();
 
 #endif

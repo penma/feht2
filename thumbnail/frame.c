@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,27 +12,36 @@
    content, so that text dimensions can be calculated from the real
    space needed (e.g. from format string) */
 
-/* static */ void symbols_render(struct rect frame, struct thumbnail *t) {
-	/* should it be struct thumbnail?
-	   maybe a generic catch-all struct fooprefix_file instead? */
+static struct coord symbols_frame_size(struct frame *frame) {
+	/* TODO calculate real text size instead of hardcoding */
+	return COORD(frame->thumbnail_size.width, frame->thumbnail_size.height + 12);
+}
 
-	/* XXX here would be a good place to use a struct frame.
-	   stores as input requested thumb size and knows it all the time
-	   instead of doing this crap calculation.. */
-	int th_w = frame.dimensions.width;
-	int th_h = frame.dimensions.height - 12;
+static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect target) {
+	/* should it be struct thumbnail?
+	   maybe a generic catch-all struct fooprefix_file instead?
+	   (but isn't struct thumbnail already that, just oddly named?) */
+
+	/* XXX hm */
+	struct coord _rc1 = symbols_frame_size(frame);
+	struct coord _rc2 = target.dimensions;
+	if (_rc1.x != _rc2.x || _rc1.y != _rc2.y) {
+		fprintf(stderr, "[-] target frame size %dx%d does not match configured one %dx%d\n",
+			_rc2.x, _rc2.y, _rc1.x, _rc1.y
+		);
+	}
 
 	if (t->imlib != NULL && !t->failed) {
 		struct coord render_dim = coord_scale_to_fit(
 			COORD(t->width, t->height),
-			COORD(th_w, th_h)
+			frame->thumbnail_size
 		);
 
 		imlib_blend_image_onto_image(t->imlib, 1,
 			/* sxywh */ 0, 0, t->width, t->height,
 			/* dxywh */
-				frame.topleft.x + (th_w - render_dim.width ) / 2,
-				frame.topleft.y + (th_h - render_dim.height) / 2,
+				target.topleft.x + (frame->thumbnail_size.width  - render_dim.width ) / 2,
+				target.topleft.y + (frame->thumbnail_size.height - render_dim.height) / 2,
 				render_dim.width, render_dim.height
 		);
 	}
@@ -66,8 +76,8 @@
 		imlib_get_text_size(text, &textwidth, &textheight);
 
 		int tx, ty;
-		tx = frame.topleft.x + (frame.dimensions.width - textwidth) / 2;
-		ty = frame.topleft.y + th_h;
+		tx = target.topleft.x + (target.dimensions.width - textwidth) / 2;
+		ty = target.topleft.y + frame->thumbnail_size.height;
 
 		imlib_text_draw(tx, ty, text);
 
@@ -75,8 +85,11 @@
 	}
 }
 
-/* static */ struct coord symbols_framesize(struct coord thumb_dim) {
-	/* TODO calculate real text size instead of hardcoding */
-	return COORD(thumb_dim.width, thumb_dim.height + 12);
-}
+struct frame *frame_new_symbols() {
+	struct frame *f = malloc(sizeof(struct frame));
 
+	f->frame_size = symbols_frame_size;
+	f->render     = symbols_render;
+
+	return f;
+}
