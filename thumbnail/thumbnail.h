@@ -1,12 +1,12 @@
 #ifndef _THUMBNAIL_THUMBNAIL_H
 #define _THUMBNAIL_THUMBNAIL_H
 
-extern int thumb_width, thumb_height;
+#include "common/types.h"
 
 struct thumbnail {
 	char *filename;
 	Imlib_Image imlib;
-	int width, height;
+	struct coord thumb_dim;
 	int size;
 	int failed;
 };

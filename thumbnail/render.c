@@ -12,14 +12,16 @@
 #include "thumbnail/layout.h"
 #include "thumbnail/frame.h"
 
+extern struct layout *th_layout;
+extern struct frame  *th_frame;
+
 extern Window x11_window;
-extern int win_width, win_height;
 extern int scroll_offset;
 extern int zooming;
 
 /* the background image on which everything is drawn. */
 
-static int window_imlib_width = 0, window_imlib_height = 0;
+static struct coord window_imlib_dim;
 static Imlib_Image window_imlib = NULL;
 
 static int min(int a, int b) {
@@ -37,8 +39,8 @@ static void ensure_window_imlib() {
 
 	/* if window size has changed, we need a new pixmap. */
 
-	if (win_width  != window_imlib_width ||
-	    win_height != window_imlib_height) {
+	if (th_layout->window.width  != window_imlib_dim.width ||
+	    th_layout->window.height != window_imlib_dim.height) {
 		need_new = 1;
 	}
 
@@ -53,15 +55,15 @@ static void ensure_window_imlib() {
 		/* we might not know the window size yet, but create
 		   a window anyway. (FIXME?) */
 
-		if (win_width == 0)
-			win_width = 1;
+		window_imlib_dim = th_layout->window;
 
-		if (win_height == 0)
-			win_height = 1;
+		if (window_imlib_dim.width == 0)
+			window_imlib_dim.width = 1;
 
-		window_imlib = imlib_create_image(win_width, win_height);
-		window_imlib_width  = win_width;
-		window_imlib_height = win_height;
+		if (window_imlib_dim.height == 0)
+			window_imlib_dim.height = 1;
+
+		window_imlib = imlib_create_image(window_imlib_dim.width, window_imlib_dim.height);
 	}
 }
 
@@ -76,35 +78,14 @@ void update_view() {
 
 	/* standard black */
 	imlib_context_set_color(0, 0, 0, 255);
-	imlib_image_fill_rectangle(0, 0, win_width, win_height);
+	imlib_image_fill_rectangle(0, 0, th_layout->window.width, th_layout->window.height);
 
 	/* render all the thumbnails. */
-
-	/* XXX construct layout elsewhere */
-
-	struct frame *F = frame_new_symbols();
-	F->thumbnail_size = COORD(thumb_width, thumb_height);
-
-	struct layout *L = layout_new();
-	L->window  = COORD(win_width, win_height);
-	L->spacing = COORD(20, 20);
-	L->frame   = F->frame_size(F);
-
-	{
-		L->frame_count = 0;
-		struct thumbnail **p = thumbnails;
-		while (*p != NULL) {
-			p++;
-			L->frame_count++;
-		}
-	}
-
-	layout_recompute(L);
 
 	/* XXX compute this or even return list from layout? */
 	struct rect onscreen = RECT(
 		COORD(0, scroll_offset),
-		COORD(L->window.width, L->window.height)
+		th_layout->window
 	);
 
 	struct thumbnail **p = thumbnails;
@@ -113,7 +94,7 @@ void update_view() {
 	while (*p != NULL) {
 		struct thumbnail *t = (*p);
 
-		struct rect frame_rect = layout_frame_rect_by_number(L, frame_num);
+		struct rect frame_rect = layout_frame_rect_by_number(th_layout, frame_num);
 
 		if (!rect_intersect(frame_rect, onscreen)) {
 			/* FIXME meh, code duplication */
@@ -127,7 +108,7 @@ void update_view() {
 		struct rect render_rect = frame_rect;
 		render_rect.topleft.y -= scroll_offset; // XXX
 
-		F->render(F, t, render_rect);
+		th_frame->render(th_frame, t, render_rect);
 
 		/* FIXME (global vars etc)
 		   when resizing thumbs, draw borders to make the change more
@@ -147,7 +128,10 @@ void update_view() {
 	}
 
 	imlib_context_set_color(255, 255, 255, 255);
-	imlib_image_draw_line(0, L->total_height - scroll_offset, L->window.width, L->total_height - scroll_offset, 0);
+	imlib_image_draw_line(
+		0, th_layout->total_height - scroll_offset,
+		th_layout->window.width, th_layout->total_height - scroll_offset,
+	0);
 
 	/* transfer the image to the window */
 

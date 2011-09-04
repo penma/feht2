@@ -14,7 +14,7 @@
 
 static struct coord symbols_frame_size(struct frame *frame) {
 	/* TODO calculate real text size instead of hardcoding */
-	return COORD(frame->thumbnail_size.width, frame->thumbnail_size.height + 12);
+	return COORD(frame->thumb_dim.width, frame->thumb_dim.height + 12);
 }
 
 static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect target) {
@@ -33,15 +33,15 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 
 	if (t->imlib != NULL && !t->failed) {
 		struct coord render_dim = coord_scale_to_fit(
-			COORD(t->width, t->height),
-			frame->thumbnail_size
+			t->thumb_dim,
+			frame->thumb_dim
 		);
 
 		imlib_blend_image_onto_image(t->imlib, 1,
-			/* sxywh */ 0, 0, t->width, t->height,
+			/* sxywh */ 0, 0, t->thumb_dim.width, t->thumb_dim.height,
 			/* dxywh */
-				target.topleft.x + (frame->thumbnail_size.width  - render_dim.width ) / 2,
-				target.topleft.y + (frame->thumbnail_size.height - render_dim.height) / 2,
+				target.topleft.x + (frame->thumb_dim.width  - render_dim.width ) / 2,
+				target.topleft.y + (frame->thumb_dim.height - render_dim.height) / 2,
 				render_dim.width, render_dim.height
 		);
 	}
@@ -77,7 +77,7 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 
 		int tx, ty;
 		tx = target.topleft.x + (target.dimensions.width - textwidth) / 2;
-		ty = target.topleft.y + frame->thumbnail_size.height;
+		ty = target.topleft.y + frame->thumb_dim.height;
 
 		imlib_text_draw(tx, ty, text);
 

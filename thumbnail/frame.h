@@ -6,7 +6,7 @@
 #include "thumbnail/thumbnail.h"
 
 struct frame {
-	struct coord thumbnail_size;
+	struct coord thumb_dim;
 
 	void (*render)(struct frame *, struct thumbnail *, struct rect);
 	struct coord (*frame_size)(struct frame *);

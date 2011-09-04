@@ -9,9 +9,11 @@
 #include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
 
-int thumb_width = 200, thumb_height = 150;
+extern struct layout *th_layout;
+extern struct frame  *th_frame;
+
 struct thumbnail **thumbnails = NULL;
-extern int scroll_offset, win_width, win_height;
+extern int scroll_offset;
 
 static int max(int a, int b) {
 	return a > b ? a : b;
@@ -63,7 +65,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed &&
 			(
 				(*p)->imlib == NULL ||
-				(*p)->size  != thumb_size_for_frame(COORD(thumb_width, thumb_height))
+				(*p)->size  != thumb_size_for_frame(th_frame->thumb_dim)
 			)
 		) {
 			return (*p);
@@ -83,7 +85,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed &&
 			(
 				(*p)->imlib == NULL ||
-				(*p)->size  != thumb_size_for_frame(COORD(thumb_width, thumb_height))
+				(*p)->size  != thumb_size_for_frame(th_frame->thumb_dim)
 			)
 		) {
 			return (*p);
@@ -147,27 +149,7 @@ static Imlib_Image generate_thumbnail(const char *filename, int size) {
 }
 
 int try_update_thumbnails() {
-	/* XXX construct layout elsewhere */
-	struct frame *F = frame_new_symbols();
-	F->thumbnail_size = COORD(thumb_width, thumb_height);
-
-	struct layout *L = layout_new();
-	L->window  = COORD(win_width, win_height);
-	L->spacing = COORD(20, 20);
-	L->frame   = F->frame_size(F);
-
-	{
-		L->frame_count = 0;
-		struct thumbnail **p = thumbnails;
-		while (*p != NULL) {
-			p++;
-			L->frame_count++;
-		}
-	}
-
-	layout_recompute(L);
-
-	struct thumbnail *t = next_to_update(thumbnails, L);
+	struct thumbnail *t = next_to_update(thumbnails, th_layout);
 
 	if (t == NULL) {
 		return 0;
@@ -175,7 +157,7 @@ int try_update_thumbnails() {
 
 	/* size we need */
 
-	int size = thumb_size_for_frame(COORD(thumb_width, thumb_height));
+	int size = thumb_size_for_frame(th_frame->thumb_dim);
 
 	/* update it */
 
@@ -183,9 +165,11 @@ int try_update_thumbnails() {
 
 	if (t->imlib != NULL) {
 		imlib_context_set_image(t->imlib);
-		t->width  = imlib_image_get_width();
-		t->height = imlib_image_get_height();
-		t->size   = size;
+		t->thumb_dim = COORD(
+			imlib_image_get_width(),
+			imlib_image_get_height()
+		);
+		t->size = size;
 	} else {
 		t->failed = 1;
 	}

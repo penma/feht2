@@ -22,10 +22,10 @@
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/render.h"
 
-extern int thumb_width, thumb_height;
+struct layout *th_layout;
+struct frame  *th_frame;
 
 Window x11_window;
-int win_width, win_height;
 int view_dirty = 1;
 
 static int must_update = 0;
@@ -35,33 +35,13 @@ int zooming = 0;
 int scroll_offset = 0;
 static int scroll_offset_start;
 
-static int thumb_w_start, thumb_h_start;
+static struct coord thumb_dim_start;
 
 static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
 		button, pos.x, pos.y);
 
-	/* XXX construct layout elsewhere */
-	struct frame *F = frame_new_symbols();
-	F->thumbnail_size = COORD(thumb_width, thumb_height);
-
-	struct layout *L = layout_new();
-	L->window  = COORD(win_width, win_height);
-	L->spacing = COORD(20, 20);
-	L->frame   = F->frame_size(F);
-
-	{
-		L->frame_count = 0;
-		struct thumbnail **p = thumbnails;
-		while (*p != NULL) {
-			p++;
-			L->frame_count++;
-		}
-	}
-
-	layout_recompute(L);
-
-	int n = layout_frame_number_by_coordinate(L, COORD(pos.x, pos.y + scroll_offset));
+	int n = layout_frame_number_by_coordinate(th_layout, COORD(pos.x, pos.y + scroll_offset));
 	if (n == -1) {
 		fputs("... no image there.\n", stderr);
 	} else {
@@ -73,7 +53,7 @@ static void eh_click(int button, struct coord pos) {
 
 		if (!fork()) {
 			if (!fork()) {
-				char **varg = malloc(sizeof(char*) * (L->frame_count + 4));
+				char **varg = malloc(sizeof(char*) * (th_layout->frame_count + 4));
 				int va = 3;
 				struct thumbnail **p = thumbnails;
 				while (*p != NULL) {
@@ -107,8 +87,7 @@ static void eh_drag_start(int button, struct coord start) {
 		scroll_offset_start = scroll_offset;
 	} else if (button == 2) {
 		zooming = 1;
-		thumb_w_start = thumb_width;
-		thumb_h_start = thumb_height;
+		thumb_dim_start = th_frame->thumb_dim;
 	}
 }
 
@@ -129,9 +108,13 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 		scroll_offset = scroll_offset_start - (pointer.y - start.y);
 		view_dirty = 1;
 	} else if (button == 2) {
-		thumb_width  = thumb_w_start + (pointer.x - start.x);
-		thumb_height = thumb_h_start + (pointer.y - start.y);
-		fprintf(stderr, "thumb size now %dx%d\n", thumb_width, thumb_height);
+		th_frame->thumb_dim = COORD(
+			thumb_dim_start.width  + (pointer.x - start.x),
+			thumb_dim_start.height + (pointer.y - start.y)
+		);
+		th_layout->frame = th_frame->frame_size(th_frame);
+		layout_recompute(th_layout);
+		fprintf(stderr, "thumb size now %dx%d\n", th_frame->thumb_dim.width, th_frame->thumb_dim.height);
 		view_dirty = 1;
 	}
 }
@@ -147,8 +130,11 @@ static void event_handle_x11(Display *dpy) {
 		}
 
 		if (ev.type == ConfigureNotify) {
-			win_width  = ev.xconfigure.width;
-			win_height = ev.xconfigure.height;
+			th_layout->window = COORD(
+				ev.xconfigure.width,
+				ev.xconfigure.height
+			);
+			layout_recompute(th_layout);
 
 			view_dirty = 1;
 		} else if (ev.type == Expose) {
@@ -262,6 +248,18 @@ int main(int argc, char *argv[]) {
 	free(dir_entries);
 
 	thumbnails[dir_count] = NULL;
+
+	/* construct layout and stuff */
+
+	th_frame = frame_new_symbols();
+	th_frame->thumb_dim = COORD(200, 150);
+
+	th_layout = layout_new();
+	th_layout->window  = COORD(0, 0);
+	th_layout->spacing = COORD(20, 20);
+	th_layout->frame   = th_frame->frame_size(th_frame);
+	th_layout->frame_count = dir_count;
+	layout_recompute(th_layout);
 
 	must_update = 1;
 
