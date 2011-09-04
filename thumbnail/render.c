@@ -7,11 +7,11 @@
 
 #include <Imlib2.h>
 
-#include "common/x11.h"
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/layout.h"
 #include "thumbnail/frame.h"
 
+extern Window x11_window;
 extern struct layout *th_layout;
 extern struct frame  *th_frame;
 
@@ -135,7 +135,7 @@ void update_view() {
 	/* transfer the image to the window */
 
 	imlib_context_set_image(window_imlib);
-	imlib_context_set_drawable(x11.window);
+	imlib_context_set_drawable(x11_window);
 	imlib_render_image_on_drawable(0, 0);
 }
 

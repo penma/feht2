@@ -1,6 +1,8 @@
 #ifndef _SINGLE_X11_H
 #define _SINGLE_X11_H
 
+#include <X11/Xlib.h>
+
 /* x11 connection parameters */
 
 struct x11_connection {
@@ -12,13 +14,10 @@ struct x11_connection {
 	Colormap  colormap;
 	Visual   *visual;
 	int       depth;
-
-	Window    window;
 };
 
-extern struct x11_connection x11;
-
-void setup_x11();
-void setup_imlib();
+struct x11_connection *x11_connect();
+void x11_setup_imlib(struct x11_connection *);
+Window x11_make_window(struct x11_connection *);
 
 #endif

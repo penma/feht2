@@ -22,6 +22,9 @@
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/render.h"
 
+struct x11_connection *x11;
+Window x11_window;
+
 struct layout *th_layout;
 struct frame  *th_frame;
 
@@ -163,14 +166,14 @@ static void event_handle_x11(Display *dpy) {
 }
 
 static void event_loop(Display *dpy, int ctl_fd) {
-	int max_fd = x11.fd + 1;
+	int max_fd = x11->fd + 1;
 
 	fd_set fds;
 	int ret;
 
 	while (1) {
 		FD_ZERO(&fds);
-		FD_SET(x11.fd, &fds);
+		FD_SET(x11->fd, &fds);
 
 		ret = select(
 			max_fd, &fds, NULL, NULL,
@@ -191,7 +194,7 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		 * so we use that to wake up.
 		 */
 
-		if (FD_ISSET(x11.fd, &fds) || XPending(dpy)) {
+		if (FD_ISSET(x11->fd, &fds) || XPending(dpy)) {
 			event_handle_x11(dpy);
 		}
 
@@ -221,8 +224,8 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	setup_x11();
-	setup_imlib();
+	x11 = x11_connect();
+	x11_setup_imlib(x11);
 
 	/* setup input foo */
 
@@ -230,10 +233,10 @@ int main(int argc, char *argv[]) {
 	input_set_drag_handlers(eh_drag_start, eh_drag_stop, eh_drag_update);
 
 	/* make window */
-	make_window();
+	x11_window = x11_make_window(x11);
 
-	XFlush(x11.display);
-	XStoreName(x11.display, x11.window, argv[1]);
+	XFlush(x11->display);
+	XStoreName(x11->display, x11_window, argv[1]);
 
 	/* blafoo */
 
@@ -272,6 +275,6 @@ int main(int argc, char *argv[]) {
 
 	must_update = 1;
 
-	event_loop(x11.display, 0); /* 0 = stdin */
+	event_loop(x11->display, 0); /* 0 = stdin */
 }
 

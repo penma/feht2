@@ -7,29 +7,32 @@
 
 #include "common/x11.h"
 
-struct x11_connection x11;
+struct x11_connection *x11_connect() {
+	struct x11_connection *x = malloc(sizeof(struct x11_connection));
 
-void setup_x11() {
 	/* connect and cache some static values. */
 
-	x11.display  = XOpenDisplay(NULL);
-	x11.fd       = ConnectionNumber (x11.display);
-	x11.screen   = DefaultScreen    (x11.display);
-	x11.root     = DefaultRootWindow(x11.display);
-	x11.gc       = DefaultGC        (x11.display, x11.screen);
-	x11.colormap = DefaultColormap  (x11.display, x11.screen);
-	x11.visual   = DefaultVisual    (x11.display, x11.screen);
-	x11.depth    = DefaultDepth     (x11.display, x11.screen);
+	x->display  = XOpenDisplay(NULL);
+	x->fd       = ConnectionNumber (x->display);
+	x->screen   = DefaultScreen    (x->display);
+	x->root     = DefaultRootWindow(x->display);
+	x->gc       = DefaultGC        (x->display, x->screen);
+	x->colormap = DefaultColormap  (x->display, x->screen);
+	x->visual   = DefaultVisual    (x->display, x->screen);
+	x->depth    = DefaultDepth     (x->display, x->screen);
+
+	return x;
 }
 
-void setup_imlib() {
-	imlib_context_set_display(x11.display);
-
-	imlib_context_set_visual(x11.visual);
-	imlib_context_set_colormap(x11.colormap);
+void x11_setup_imlib(struct x11_connection *x) {
+	imlib_context_set_display(x->display);
+	imlib_context_set_visual(x->visual);
+	imlib_context_set_colormap(x->colormap);
 }
 
-void make_window() {
+Window x11_make_window(struct x11_connection *x) {
+	Window win;
+
 	XSetWindowAttributes attr;
 
 	attr.event_mask =
@@ -39,17 +42,19 @@ void make_window() {
 		KeyPressMask | KeyReleaseMask |
 		FocusChangeMask | PropertyChangeMask;
 
-	x11.window = XCreateWindow(
-		x11.display, x11.root,
+	win = XCreateWindow(
+		x->display, x->root,
 		0, 0, 640, 480, 0,
-		x11.depth,
+		x->depth,
 		InputOutput,
-		x11.visual,
+		x->visual,
 		CWEventMask,
 		&attr);
 
 	/* map/show window */
-	XMapWindow(x11.display, x11.window);
+	XMapWindow(x->display, win);
+
+	return win;
 }
 
 
