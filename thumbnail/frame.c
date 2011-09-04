@@ -24,7 +24,7 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 
 	/* XXX hm */
 	struct coord _rc1 = symbols_frame_size(frame);
-	struct coord _rc2 = target.dimensions;
+	struct coord _rc2 = target.dim;
 	if (_rc1.x != _rc2.x || _rc1.y != _rc2.y) {
 		fprintf(stderr, "[-] target frame size %dx%d does not match configured one %dx%d\n",
 			_rc2.x, _rc2.y, _rc1.x, _rc1.y
@@ -40,8 +40,8 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 		imlib_blend_image_onto_image(t->imlib, 1,
 			/* sxywh */ 0, 0, t->thumb_dim.width, t->thumb_dim.height,
 			/* dxywh */
-				target.topleft.x + (frame->thumb_dim.width  - render_dim.width ) / 2,
-				target.topleft.y + (frame->thumb_dim.height - render_dim.height) / 2,
+				target.tl.x + (frame->thumb_dim.width  - render_dim.width ) / 2,
+				target.tl.y + (frame->thumb_dim.height - render_dim.height) / 2,
 				render_dim.width, render_dim.height
 		);
 	}
@@ -76,8 +76,8 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 		imlib_get_text_size(text, &textwidth, &textheight);
 
 		int tx, ty;
-		tx = target.topleft.x + (target.dimensions.width - textwidth) / 2;
-		ty = target.topleft.y + frame->thumb_dim.height;
+		tx = target.tl.x + (target.dim.width - textwidth) / 2;
+		ty = target.tl.y + frame->thumb_dim.height;
 
 		imlib_text_draw(tx, ty, text);
 

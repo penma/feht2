@@ -35,9 +35,18 @@ struct coord coord_downscale_to_fit(struct coord obj, struct coord fit) {
 
 int rect_intersect(struct rect r1, struct rect r2) {
 	return !(
-		r2.topleft.x > r1.topleft.x + r1.dimensions.width  ||
-		r2.topleft.x + r2.dimensions.width  < r1.topleft.x ||
-		r2.topleft.y > r1.topleft.y + r1.dimensions.height ||
-		r2.topleft.y + r2.dimensions.height < r1.topleft.y
+		r2.tl.x                 > r1.tl.x + r1.dim.width  ||
+		r2.tl.x + r2.dim.width  < r1.tl.x                 ||
+		r2.tl.y                 > r1.tl.y + r1.dim.height ||
+		r2.tl.y + r2.dim.height < r1.tl.y
+	);
+}
+
+/* does a rectangle include a point? (on border = yes) */
+
+int rect_contains(struct rect r, struct coord c) {
+	return (
+		r.tl.x <= c.x && r.tl.x + r.dim.width  >= c.x &&
+		r.tl.y <= c.y && r.tl.y + r.dim.height >= c.y
 	);
 }

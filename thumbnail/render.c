@@ -105,7 +105,7 @@ void update_view() {
 		// fprintf(stderr, "[+] %s\n", (*p)->filename);
 
 		struct rect render_rect = frame_rect;
-		render_rect.topleft.y -= scroll_offset; // XXX
+		render_rect.tl.y -= scroll_offset; // XXX
 
 		th_frame->render(th_frame, t, render_rect);
 
@@ -115,10 +115,10 @@ void update_view() {
 
 		if (zooming) {
 			imlib_image_draw_rectangle(
-				render_rect.topleft.x,
-				render_rect.topleft.y,
-				render_rect.dimensions.x,
-				render_rect.dimensions.y
+				render_rect.tl.x,
+				render_rect.tl.y,
+				render_rect.dim.x,
+				render_rect.dim.y
 			);
 		}
 

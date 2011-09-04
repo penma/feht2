@@ -21,12 +21,7 @@ int layout_frame_number_by_coord(struct layout *l, struct coord probe) {
 	for (int f = 0; f < l->frame_count; f++) {
 		struct rect ff = layout_frame_rect_by_number(l, f);
 
-		if (
-			ff.topleft.x <= probe.x &&
-			probe.x <= ff.topleft.x + ff.dimensions.width &&
-			ff.topleft.y <= probe.y &&
-			probe.y <= ff.topleft.y + ff.dimensions.height
-		) {
+		if (rect_contains(ff, probe)) {
 			return f;
 		}
 	}
@@ -51,12 +46,12 @@ struct rect layout_frame_rect_by_number(struct layout *l, int frame) {
 	int col = frame % l->_frames_per_row;
 	int row = frame / l->_frames_per_row;
 
-	r.topleft.x = (col + 1) * l->_frame_spacing
-	            +  col      * l->frame.width;
-	r.topleft.y = (row + 1) * l->spacing.vertical
-	            +  row      * l->frame.height;
+	r.tl.x = (col + 1) * l->_frame_spacing
+	       +  col      * l->frame.width;
+	r.tl.y = (row + 1) * l->spacing.vertical
+	       +  row      * l->frame.height;
 
-	r.dimensions = l->frame;
+	r.dim = l->frame;
 
 	return r;
 }
