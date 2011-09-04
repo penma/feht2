@@ -12,6 +12,8 @@ struct x11_connection {
 	Colormap  colormap;
 	Visual   *visual;
 	int       depth;
+
+	Window    window;
 };
 
 extern struct x11_connection x11;

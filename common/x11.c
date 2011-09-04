@@ -8,7 +8,6 @@
 #include "common/x11.h"
 
 struct x11_connection x11;
-extern Window x11_window;
 
 void setup_x11() {
 	/* connect and cache some static values. */
@@ -30,7 +29,7 @@ void setup_imlib() {
 	imlib_context_set_colormap(x11.colormap);
 }
 
-/* unknown */ void make_window() {
+void make_window() {
 	XSetWindowAttributes attr;
 
 	attr.event_mask =
@@ -40,7 +39,7 @@ void setup_imlib() {
 		KeyPressMask | KeyReleaseMask |
 		FocusChangeMask | PropertyChangeMask;
 
-	x11_window = XCreateWindow(
+	x11.window = XCreateWindow(
 		x11.display, x11.root,
 		0, 0, 640, 480, 0,
 		x11.depth,
@@ -50,7 +49,7 @@ void setup_imlib() {
 		&attr);
 
 	/* map/show window */
-	XMapWindow(x11.display, x11_window);
+	XMapWindow(x11.display, x11.window);
 }
 
 

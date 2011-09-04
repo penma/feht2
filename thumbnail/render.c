@@ -15,7 +15,6 @@
 extern struct layout *th_layout;
 extern struct frame  *th_frame;
 
-extern Window x11_window;
 extern int scroll_offset;
 extern int zooming;
 
@@ -136,7 +135,7 @@ void update_view() {
 	/* transfer the image to the window */
 
 	imlib_context_set_image(window_imlib);
-	imlib_context_set_drawable(x11_window);
+	imlib_context_set_drawable(x11.window);
 	imlib_render_image_on_drawable(0, 0);
 }
 

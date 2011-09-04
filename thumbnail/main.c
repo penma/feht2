@@ -25,7 +25,6 @@
 struct layout *th_layout;
 struct frame  *th_frame;
 
-Window x11_window;
 int view_dirty = 1;
 
 static int must_update = 0;
@@ -224,7 +223,7 @@ int main(int argc, char *argv[]) {
 	make_window();
 
 	XFlush(x11.display);
-	XStoreName(x11.display, x11_window, argv[1]);
+	XStoreName(x11.display, x11.window, argv[1]);
 
 	/* blafoo */
 
