@@ -1,8 +1,9 @@
 #include "common/types.h"
 
 /* Scales a rectangle 'obj' so it fits into the rectangle 'fit',
-   preserving the aspect ratio.
-   Smaller rectangles will be upscaled. */
+ * preserving the aspect ratio.
+ * Smaller rectangles will be upscaled.
+ */
 
 struct coord coord_scale_to_fit(struct coord obj, struct coord fit) {
 	struct coord new;
@@ -19,7 +20,8 @@ struct coord coord_scale_to_fit(struct coord obj, struct coord fit) {
 }
 
 /* Like coord_scale_to_fit, but smaller rectangles retain their size,
-   only larger ones will be resized. */
+ * only larger ones will be resized.
+ */
 
 struct coord coord_downscale_to_fit(struct coord obj, struct coord fit) {
 	if (obj.x < fit.x && obj.y < fit.y) {

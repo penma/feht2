@@ -178,13 +178,13 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		}
 
 		/* sometimes, especially during thumbnail updating, we do not
-		   see activity on the FD even though there are events available.
-		   I think this happens after a redraw followed by XFlush, which
-		   makes Xlib poll the FD for events. So by the time we call
-		   select here, they're already read.
-		   We can use XPending to find out about that. When not updating
-		   thumbnails, new events still trigger the FD select, so we use
-		   that to wake up. */
+		 * see activity on the FD even though there are events available.
+		 * I think this happens after a redraw followed by XFlush, which
+		 * makes Xlib poll the FD for events. So by the time we call
+		 *  select here, they're already read.
+		 * We can use XPending to find out about that. When not updating
+		 * thumbnails, new events still trigger the FD select, so we use
+		 * that to wake up. */
 
 		if (FD_ISSET(x11.fd, &fds) || XPending(dpy)) {
 			event_handle_x11(dpy);
