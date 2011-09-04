@@ -113,7 +113,8 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 		);
 		th_layout->frame = th_frame->frame_size(th_frame);
 		layout_recompute(th_layout);
-		fprintf(stderr, "thumb size now %dx%d\n", th_frame->thumb_dim.width, th_frame->thumb_dim.height);
+		fprintf(stderr, "thumb size now %dx%d\n",
+			th_frame->thumb_dim.width, th_frame->thumb_dim.height);
 		view_dirty = 1;
 	}
 }
@@ -171,27 +172,36 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		FD_ZERO(&fds);
 		FD_SET(x11.fd, &fds);
 
-		ret = select(max_fd, &fds, NULL, NULL, must_update ? &(struct timeval){ 0, 0 } : NULL);
+		ret = select(
+			max_fd, &fds, NULL, NULL,
+			must_update ? &(struct timeval){ 0, 0 } : NULL
+		);
 
 		if (ret == -1) {
 			perror("select"); /* XXX */
 		}
 
 		/* sometimes, especially during thumbnail updating, we do not
-		 * see activity on the FD even though there are events available.
-		 * I think this happens after a redraw followed by XFlush, which
-		 * makes Xlib poll the FD for events. So by the time we call
-		 *  select here, they're already read.
-		 * We can use XPending to find out about that. When not updating
-		 * thumbnails, new events still trigger the FD select, so we use
-		 * that to wake up. */
+		 * see activity on the FD even though there are events
+		 * available. I think this happens after a redraw followed by
+		 * XFlush, which makes Xlib poll the FD for events. So by the
+		 * time we call select here, they're already read.
+		 * We can use XPending to find out about that. When not
+		 * updating thumbnails, new events still trigger the FD select,
+		 * so we use that to wake up.
+		 */
 
 		if (FD_ISSET(x11.fd, &fds) || XPending(dpy)) {
 			event_handle_x11(dpy);
 		}
 
 		must_update = try_update_thumbnails();
-		if (must_update) { /* HACK. but if it's 1, something was indeed updated */
+
+		/* FIXME: make sure that really every update causes this to
+		 * be set.
+		 */
+
+		if (must_update) {
 			view_dirty = 1;
 		}
 
