@@ -40,7 +40,7 @@ static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
 		button, pos.x, pos.y);
 
-	int n = layout_frame_number_by_coordinate(th_layout, COORD(pos.x, pos.y + scroll_offset));
+	int n = layout_frame_number_by_coord(th_layout, COORD(pos.x, pos.y + scroll_offset));
 	if (n == -1) {
 		fputs("... no image there.\n", stderr);
 	} else {

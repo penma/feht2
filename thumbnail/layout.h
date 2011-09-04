@@ -17,7 +17,7 @@ struct layout {
 };
 
 struct layout *layout_new();
-int            layout_frame_number_by_coordinate(struct layout *, struct coord);
+int            layout_frame_number_by_coord(struct layout *, struct coord);
 struct rect    layout_frame_rect_by_number(struct layout *, int);
 void           layout_recompute(struct layout *);
 

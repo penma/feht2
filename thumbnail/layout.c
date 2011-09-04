@@ -15,7 +15,7 @@ struct layout *layout_new() {
 	return l;
 }
 
-int layout_frame_number_by_coordinate(struct layout *l, struct coord probe) {
+int layout_frame_number_by_coord(struct layout *l, struct coord probe) {
 	/* FIXME use a more efficient implementation. */
 
 	for (int f = 0; f < l->frame_count; f++) {
