@@ -21,7 +21,7 @@ static inline struct rect RECT(struct coord tl, struct coord dim) {
 
 struct coord coord_scale_to_fit(struct coord obj, struct coord fit);
 struct coord coord_downscale_to_fit(struct coord obj, struct coord fit);
-int rect_intersect(struct rect r1, struct rect r2);
+int rect_intersect(struct rect, struct rect);
 int rect_contains(struct rect, struct coord);
 
 #endif
