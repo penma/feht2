@@ -238,8 +238,8 @@ int main(int argc, char *argv[]) {
 	surf = surface_new(x11);
 	surf->window = x11_make_window(x11);
 
-	XFlush(x11->display);
 	XStoreName(x11->display, surf->window, argv[1]);
+	XFlush(x11->display);
 
 	/* blafoo */
 
