@@ -10,8 +10,9 @@
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/layout.h"
 #include "thumbnail/frame.h"
+#include "common/surface.h"
 
-extern Window x11_window;
+extern struct surface *surf;
 extern struct layout *th_layout;
 extern struct frame  *th_frame;
 
@@ -20,58 +21,16 @@ extern int zooming;
 
 /* the background image on which everything is drawn. */
 
-static struct coord window_imlib_dim;
-static Imlib_Image window_imlib = NULL;
-
 static int min(int a, int b) {
 	return a < b ? a : b;
-}
-
-static void ensure_window_imlib() {
-	int need_new = 0;
-
-	/* if there's no imlib image yet, we obviously need one. */
-
-	if (window_imlib == NULL) {
-		need_new = 1;
-	}
-
-	/* if window size has changed, we need a new pixmap. */
-
-	if (th_layout->window.width  != window_imlib_dim.width ||
-	    th_layout->window.height != window_imlib_dim.height) {
-		need_new = 1;
-	}
-
-	/* now maybe create a new one */
-
-	if (need_new) {
-		if (window_imlib != NULL) {
-			imlib_context_set_image(window_imlib);
-			imlib_free_image_and_decache();
-		}
-
-		/* we might not know the window size yet, but create
-		   a window anyway. (FIXME?) */
-
-		window_imlib_dim = th_layout->window;
-
-		if (window_imlib_dim.width == 0)
-			window_imlib_dim.width = 1;
-
-		if (window_imlib_dim.height == 0)
-			window_imlib_dim.height = 1;
-
-		window_imlib = imlib_create_image(window_imlib_dim.width, window_imlib_dim.height);
-	}
 }
 
 void update_view() {
 	/* ensure we have a sane background image to draw on */
 
-	ensure_window_imlib();
+	surface_ensure_imlib(surf);
 
-	imlib_context_set_image(window_imlib);
+	imlib_context_set_image(surf->imlib);
 
 	/* render the background */
 
@@ -134,8 +93,8 @@ void update_view() {
 
 	/* transfer the image to the window */
 
-	imlib_context_set_image(window_imlib);
-	imlib_context_set_drawable(x11_window);
+	imlib_context_set_image(surf->imlib);
+	imlib_context_set_drawable(surf->window);
 	imlib_render_image_on_drawable(0, 0);
 }
 

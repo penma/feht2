@@ -16,6 +16,7 @@
 
 #include "common/input.h"
 #include "common/x11.h"
+#include "common/surface.h"
 
 #include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
@@ -23,7 +24,7 @@
 #include "thumbnail/render.h"
 
 struct x11_connection *x11;
-Window x11_window;
+struct surface *surf;
 
 struct layout *th_layout;
 struct frame  *th_frame;
@@ -233,10 +234,12 @@ int main(int argc, char *argv[]) {
 	input_set_drag_handlers(eh_drag_start, eh_drag_stop, eh_drag_update);
 
 	/* make window */
-	x11_window = x11_make_window(x11);
+
+	surf = surface_new(x11);
+	surf->window = x11_make_window(x11);
 
 	XFlush(x11->display);
-	XStoreName(x11->display, x11_window, argv[1]);
+	XStoreName(x11->display, surf->window, argv[1]);
 
 	/* blafoo */
 

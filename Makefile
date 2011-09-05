@@ -1,6 +1,6 @@
 all: thumbnail/thumbnail
 
-OBJ_COMMON    = $(addprefix common/,imlib_error.o x11.o input.o types.o)
+OBJ_COMMON    = $(addprefix common/,imlib_error.o x11.o input.o surface.o types.o)
 OBJ_THUMBNAIL = $(addprefix thumbnail/,layout.o frame.o render.o thumbnail.o main.o)
 
 CFLAGS = -std=c99 -Wall -Wextra -ggdb -I.
