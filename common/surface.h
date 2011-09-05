@@ -16,5 +16,6 @@ struct surface {
 
 struct surface *surface_new(struct x11_connection *);
 void            surface_ensure_imlib(struct surface *);
+void            surface_transfer(struct surface *);
 
 #endif

@@ -93,8 +93,6 @@ void update_view() {
 
 	/* transfer the image to the window */
 
-	imlib_context_set_image(surf->imlib);
-	imlib_context_set_drawable(surf->window);
-	imlib_render_image_on_drawable(0, 0);
+	surface_transfer(surf);
 }
 
