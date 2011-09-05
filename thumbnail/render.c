@@ -49,15 +49,12 @@ void update_view() {
 	struct thumbnail **p = thumbnails;
 
 	int frame_num = 0;
-	while (*p != NULL) {
+	for (; *p != NULL; (p++, frame_num++)) {
 		struct thumbnail *t = (*p);
 
 		struct rect frame_rect = layout_frame_rect_by_number(th_layout, frame_num);
 
 		if (!rect_intersect(frame_rect, onscreen)) {
-			/* FIXME meh, code duplication */
-			p++;
-			frame_num++;
 			continue;
 		}
 
@@ -80,9 +77,6 @@ void update_view() {
 				render_rect.dim.y
 			);
 		}
-
-		p++;
-		frame_num++;
 	}
 
 	imlib_context_set_color(255, 255, 255, 255);
