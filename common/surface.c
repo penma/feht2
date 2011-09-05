@@ -4,15 +4,14 @@
 #include <math.h>
 
 #include <X11/Xlib.h>
-
 #include <Imlib2.h>
 
 #include "common/surface.h"
 
-struct surface *surface_new(struct x11_connection *x) {
+struct surface *surface_new() {
 	struct surface *s = malloc(sizeof(struct surface));
 
-	s->x11 = x;
+	s->x11 = NULL;
 	s->window = None;
 	s->imlib = NULL;
 
@@ -20,6 +19,12 @@ struct surface *surface_new(struct x11_connection *x) {
 }
 
 void surface_ensure_imlib(struct surface *s) {
+	/* TODO: this function originally only made a new image if the
+	 * size did not change. Find out if it gives any speed advantage
+	 * to do so (wouldn't be surprised if not, it's Imlib...).
+	 * Also, find out if the XGetWindowAttributes call is necessary.
+	 */
+
 	if (s->window == None) {
 		fputs("[-] no window present, can't create imlib surface\n",
 			stderr);

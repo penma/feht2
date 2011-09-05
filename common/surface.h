@@ -14,7 +14,7 @@ struct surface {
 	struct coord dim;
 };
 
-struct surface *surface_new(struct x11_connection *);
+struct surface *surface_new();
 void            surface_ensure_imlib(struct surface *);
 void            surface_transfer(struct surface *);
 

@@ -235,7 +235,8 @@ int main(int argc, char *argv[]) {
 
 	/* make window */
 
-	surf = surface_new(x11);
+	surf = surface_new();
+	surf->x11 = x11;
 	surf->window = x11_make_window(x11);
 
 	XStoreName(x11->display, surf->window, argv[1]);
