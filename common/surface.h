@@ -11,7 +11,7 @@ struct surface {
 	struct x11_connection *x11;
 	Window window;
 	Imlib_Image imlib;
-	struct coord dim;
+	struct coord dim; // XXX either use or remove this. (depends on how deep ev. handling goes)
 };
 
 struct surface *surface_new();

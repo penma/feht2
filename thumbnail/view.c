@@ -4,46 +4,44 @@
 #include <math.h>
 
 #include <X11/Xlib.h>
-
 #include <Imlib2.h>
 
+#include "thumbnail/view.h"
+
 #include "thumbnail/thumbnail.h"
-#include "thumbnail/layout.h"
-#include "thumbnail/frame.h"
-#include "common/surface.h"
-
-extern struct surface *surf;
-extern struct layout *th_layout;
-extern struct frame  *th_frame;
-
-extern int scroll_offset;
 extern int zooming;
 
-/* the background image on which everything is drawn. */
 
-static int min(int a, int b) {
-	return a < b ? a : b;
+struct view *view_new() {
+	struct view *v = malloc(sizeof(struct view));
+
+	v->surface = NULL;
+	v->layout = NULL;
+	v->frame = NULL;
+	v->scroll_offset = 0;
+
+	return v;
 }
 
-void update_view() {
+void view_render(struct view *v) {
 	/* ensure we have a sane background image to draw on */
 
-	surface_ensure_imlib(surf);
+	surface_ensure_imlib(v->surface);
 
-	imlib_context_set_image(surf->imlib);
+	imlib_context_set_image(v->surface->imlib);
 
 	/* render the background */
 
 	/* standard black */
 	imlib_context_set_color(0, 0, 0, 255);
-	imlib_image_fill_rectangle(0, 0, th_layout->window.width, th_layout->window.height);
+	imlib_image_fill_rectangle(0, 0, v->layout->window.width, v->layout->window.height);
 
 	/* render all the thumbnails. */
 
-	/* XXX compute this or even return list from layout? */
+	/* XXX compute this or even return list from <s>layout</s> helper sub? */
 	struct rect onscreen = RECT(
-		COORD(0, scroll_offset),
-		th_layout->window
+		COORD(0, v->scroll_offset),
+		v->layout->window
 	);
 
 	struct thumbnail **p = thumbnails;
@@ -52,7 +50,7 @@ void update_view() {
 	for (; *p != NULL; (p++, frame_num++)) {
 		struct thumbnail *t = (*p);
 
-		struct rect frame_rect = layout_frame_rect_by_number(th_layout, frame_num);
+		struct rect frame_rect = layout_frame_rect_by_number(v->layout, frame_num);
 
 		if (!rect_intersect(frame_rect, onscreen)) {
 			continue;
@@ -61,9 +59,9 @@ void update_view() {
 		// fprintf(stderr, "[+] %s\n", (*p)->filename);
 
 		struct rect render_rect = frame_rect;
-		render_rect.tl.y -= scroll_offset; // XXX
+		render_rect.tl.y -= v->scroll_offset; // XXX
 
-		th_frame->render(th_frame, t, render_rect);
+		v->frame->render(v->frame, t, render_rect);
 
 		/* FIXME (global vars etc)
 		   when resizing thumbs, draw borders to make the change more
@@ -81,12 +79,12 @@ void update_view() {
 
 	imlib_context_set_color(255, 255, 255, 255);
 	imlib_image_draw_line(
-		0, th_layout->total_height - scroll_offset,
-		th_layout->window.width, th_layout->total_height - scroll_offset,
+		0, v->layout->total_height - v->scroll_offset,
+		v->layout->window.width, v->layout->total_height - v->scroll_offset,
 	0);
 
 	/* transfer the image to the window */
 
-	surface_transfer(surf);
+	surface_transfer(v->surface);
 }
 

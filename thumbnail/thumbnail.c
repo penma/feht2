@@ -8,12 +8,10 @@
 #include "thumbnail/thumbnail.h"
 #include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
-
-extern struct layout *th_layout;
-extern struct frame  *th_frame;
+#include "thumbnail/view.h"
 
 struct thumbnail **thumbnails = NULL;
-extern int scroll_offset;
+extern struct view *view;
 
 static int max(int a, int b) {
 	return a > b ? a : b;
@@ -50,7 +48,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 	/* we first check all those that are in view. */
 
 	struct rect on_screen = RECT(
-		COORD(0, scroll_offset),
+		COORD(0, view->scroll_offset),
 		layout->window
 	);
 
@@ -65,7 +63,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed &&
 			(
 				(*p)->imlib == NULL ||
-				(*p)->size  != thumb_size_for_frame(th_frame->thumb_dim)
+				(*p)->size  != thumb_size_for_frame(view->frame->thumb_dim)
 			)
 		) {
 			return (*p);
@@ -85,7 +83,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 			!(*p)->failed &&
 			(
 				(*p)->imlib == NULL ||
-				(*p)->size  != thumb_size_for_frame(th_frame->thumb_dim)
+				(*p)->size  != thumb_size_for_frame(view->frame->thumb_dim)
 			)
 		) {
 			return (*p);
@@ -149,7 +147,7 @@ static Imlib_Image generate_thumbnail(const char *filename, int size) {
 }
 
 int try_update_thumbnails() {
-	struct thumbnail *t = next_to_update(thumbnails, th_layout);
+	struct thumbnail *t = next_to_update(thumbnails, view->layout);
 
 	if (t == NULL) {
 		return 0;
@@ -157,7 +155,7 @@ int try_update_thumbnails() {
 
 	/* size we need */
 
-	int size = thumb_size_for_frame(th_frame->thumb_dim);
+	int size = thumb_size_for_frame(view->frame->thumb_dim);
 
 	/* update it */
 

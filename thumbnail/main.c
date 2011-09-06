@@ -20,14 +20,11 @@
 
 #include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
+#include "thumbnail/view.h"
 #include "thumbnail/thumbnail.h"
-#include "thumbnail/render.h"
 
 struct x11_connection *x11;
-struct surface *surf;
-
-struct layout *th_layout;
-struct frame  *th_frame;
+struct view *view;
 
 int view_dirty = 1;
 
@@ -35,7 +32,6 @@ static int must_update = 0;
 
 int zooming = 0;
 
-int scroll_offset = 0;
 static int scroll_offset_start;
 
 static struct coord thumb_dim_start;
@@ -44,7 +40,7 @@ static void eh_click(int button, struct coord pos) {
 	fprintf(stderr, "click event: button %d at %d,%d\n",
 		button, pos.x, pos.y);
 
-	int n = layout_frame_number_by_coord(th_layout, COORD(pos.x, pos.y + scroll_offset));
+	int n = layout_frame_number_by_coord(view->layout, COORD(pos.x, pos.y + view->scroll_offset));
 	if (n == -1) {
 		fputs("... no image there.\n", stderr);
 	} else {
@@ -56,7 +52,7 @@ static void eh_click(int button, struct coord pos) {
 
 		if (!fork()) {
 			if (!fork()) {
-				char **varg = malloc(sizeof(char*) * (th_layout->frame_count + 4));
+				char **varg = malloc(sizeof(char*) * (view->layout->frame_count + 4));
 				int va = 3;
 				struct thumbnail **p = thumbnails;
 				while (*p != NULL) {
@@ -87,10 +83,10 @@ static void eh_drag_start(int button, struct coord start) {
 		button, start.x, start.y);
 
 	if (button == 1) {
-		scroll_offset_start = scroll_offset;
+		scroll_offset_start = view->scroll_offset;
 	} else if (button == 2) {
 		zooming = 1;
-		thumb_dim_start = th_frame->thumb_dim;
+		thumb_dim_start = view->frame->thumb_dim;
 	}
 }
 
@@ -108,17 +104,17 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 		button, pointer.x, pointer.y, start.x, start.y);
 
 	if (button == 1) {
-		scroll_offset = scroll_offset_start - (pointer.y - start.y);
+		view->scroll_offset = scroll_offset_start - (pointer.y - start.y);
 		view_dirty = 1;
 	} else if (button == 2) {
-		th_frame->thumb_dim = COORD(
+		view->frame->thumb_dim = COORD(
 			thumb_dim_start.width  + (pointer.x - start.x),
 			thumb_dim_start.height + (pointer.y - start.y)
 		);
-		th_layout->frame = th_frame->frame_size(th_frame);
-		layout_recompute(th_layout);
+		view->layout->frame = view->frame->frame_size(view->frame);
+		layout_recompute(view->layout);
 		fprintf(stderr, "thumb size now %dx%d\n",
-			th_frame->thumb_dim.width, th_frame->thumb_dim.height);
+			view->frame->thumb_dim.width, view->frame->thumb_dim.height);
 		view_dirty = 1;
 	}
 }
@@ -134,11 +130,11 @@ static void event_handle_x11(Display *dpy) {
 		}
 
 		if (ev.type == ConfigureNotify) {
-			th_layout->window = COORD(
+			view->layout->window = COORD(
 				ev.xconfigure.width,
 				ev.xconfigure.height
 			);
-			layout_recompute(th_layout);
+			layout_recompute(view->layout);
 
 			view_dirty = 1;
 		} else if (ev.type == Expose) {
@@ -210,7 +206,7 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		}
 
 		if (view_dirty) {
-			update_view();
+			view_render(view);
 			view_dirty = 0;
 		}
 
@@ -235,11 +231,12 @@ int main(int argc, char *argv[]) {
 
 	/* make window */
 
-	surf = surface_new();
-	surf->x11 = x11;
-	surf->window = x11_make_window(x11);
+	view = view_new();
+	view->surface = surface_new();
+	view->surface->x11 = x11;
+	view->surface->window = x11_make_window(x11);
 
-	XStoreName(x11->display, surf->window, argv[1]);
+	XStoreName(x11->display, view->surface->window, argv[1]);
 	XFlush(x11->display);
 
 	/* blafoo */
@@ -267,15 +264,15 @@ int main(int argc, char *argv[]) {
 
 	/* construct layout and stuff */
 
-	th_frame = frame_new_symbols();
-	th_frame->thumb_dim = COORD(200, 150);
+	view->frame = frame_new_symbols();
+	view->frame->thumb_dim = COORD(200, 150);
 
-	th_layout = layout_new();
-	th_layout->window  = COORD(0, 0);
-	th_layout->spacing = COORD(20, 20);
-	th_layout->frame   = th_frame->frame_size(th_frame);
-	th_layout->frame_count = dir_count;
-	layout_recompute(th_layout);
+	view->layout = layout_new();
+	view->layout->window  = COORD(0, 0);
+	view->layout->spacing = COORD(20, 20);
+	view->layout->frame   = view->frame->frame_size(view->frame);
+	view->layout->frame_count = dir_count;
+	layout_recompute(view->layout);
 
 	must_update = 1;
 
