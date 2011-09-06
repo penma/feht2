@@ -47,10 +47,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 
 	/* we first check all those that are in view. */
 
-	struct rect on_screen = RECT(
-		COORD(0, view->scroll_offset),
-		layout->window
-	);
+	struct rect onscreen = view_visible_rect(view);
 
 	struct thumbnail **p = list;
 	int frame_num = 0;
@@ -59,7 +56,7 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 		struct rect frame_rect = layout_frame_rect_by_number(layout, frame_num);
 
 		if (
-			rect_intersect(frame_rect, on_screen) &&
+			rect_intersect(frame_rect, onscreen) &&
 			!(*p)->failed &&
 			(
 				(*p)->imlib == NULL ||

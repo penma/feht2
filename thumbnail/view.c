@@ -23,6 +23,13 @@ struct view *view_new() {
 	return v;
 }
 
+struct rect view_visible_rect(struct view *v) {
+	return RECT(
+		COORD(0, v->scroll_offset),
+		v->layout->window
+	);
+}
+
 void view_render(struct view *v) {
 	/* ensure we have a sane background image to draw on */
 
@@ -38,11 +45,7 @@ void view_render(struct view *v) {
 
 	/* render all the thumbnails. */
 
-	/* XXX compute this or even return list from <s>layout</s> helper sub? */
-	struct rect onscreen = RECT(
-		COORD(0, v->scroll_offset),
-		v->layout->window
-	);
+	struct rect onscreen = view_visible_rect(v);
 
 	struct thumbnail **p = thumbnails;
 
