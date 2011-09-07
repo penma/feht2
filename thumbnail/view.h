@@ -16,6 +16,7 @@ struct view {
 	struct frame *frame;
 
 	int scroll_offset; /* TODO more stuff for retaining a more natural (%) offset? */
+	int dirty;
 };
 
 struct view *view_new();

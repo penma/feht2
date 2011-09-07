@@ -26,8 +26,6 @@
 struct x11_connection *x11;
 struct view *view;
 
-int view_dirty = 1;
-
 static int must_update = 0;
 
 int zooming = 0;
@@ -105,7 +103,7 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 
 	if (button == 1) {
 		view->scroll_offset = scroll_offset_start - (pointer.y - start.y);
-		view_dirty = 1;
+		view->dirty = 1; /* XXX should be generated or even handled by view itself */
 	} else if (button == 2) {
 		view->frame->thumb_dim = COORD(
 			thumb_dim_start.width  + (pointer.x - start.x),
@@ -115,7 +113,7 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 		layout_recompute(view->layout);
 		fprintf(stderr, "thumb size now %dx%d\n",
 			view->frame->thumb_dim.width, view->frame->thumb_dim.height);
-		view_dirty = 1;
+		view->dirty = 1; /* XXX should be generated from inside view */
 	}
 }
 
@@ -136,9 +134,9 @@ static void event_handle_x11(Display *dpy) {
 			);
 			layout_recompute(view->layout);
 
-			view_dirty = 1;
-		} else if (ev.type == Expose) {
-			view_dirty = 1;
+			view->dirty = 1;
+		if (ev.type == Expose) {
+			view->dirty = 1;
 		} else {
 			const char *event_names[] = { "", "",
 				"KeyPress"        ,"KeyRelease"      ,"ButtonPress"    ,"ButtonRelease",  /* 02..05 */
@@ -202,12 +200,11 @@ static void event_loop(Display *dpy, int ctl_fd) {
 		 */
 
 		if (must_update) {
-			view_dirty = 1;
+			view->dirty = 1;
 		}
 
-		if (view_dirty) {
+		if (view->dirty) {
 			view_render(view);
-			view_dirty = 0;
 		}
 
 		XFlush(dpy);

@@ -19,6 +19,7 @@ struct view *view_new() {
 	v->layout = NULL;
 	v->frame = NULL;
 	v->scroll_offset = 0;
+	v->dirty = 1;
 
 	return v;
 }
@@ -62,7 +63,7 @@ void view_render(struct view *v) {
 		// fprintf(stderr, "[+] %s\n", (*p)->filename);
 
 		struct rect render_rect = frame_rect;
-		render_rect.tl.y -= v->scroll_offset; // XXX
+		render_rect.tl.y -= v->scroll_offset;
 
 		v->frame->render(v->frame, t, render_rect);
 
@@ -89,5 +90,9 @@ void view_render(struct view *v) {
 	/* transfer the image to the window */
 
 	surface_transfer(v->surface);
+
+	/* now we're clean */
+
+	v->dirty = 0;
 }
 
