@@ -135,7 +135,7 @@ static void event_handle_x11(Display *dpy) {
 			layout_recompute(view->layout);
 
 			view->dirty = 1;
-		if (ev.type == Expose) {
+		} else if (ev.type == Expose) {
 			view->dirty = 1;
 		} else {
 			const char *event_names[] = { "", "",
