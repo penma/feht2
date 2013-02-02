@@ -97,6 +97,9 @@ static char *tms_thumbfile_for_filename(const char *filename, int size) {
 	char *fn;
 	asprintf(&fn, "%s/%s/%s.png", thumbdir, sizedir, digest);
 
+	free(uri);
+	free(digest);
+
 	return fn;
 }
 
@@ -122,8 +125,11 @@ static Imlib_Image check_cached(const char *filename, int size) {
 		return NULL;
 	}
 
-	char *mtime = (char *) gib_hash_get(attr, "Thumb::MTime");
-	if (atol(mtime) != st.st_mtime) {
+	char *mtimec = (char *) gib_hash_get(attr, "Thumb::MTime");
+	time_t mtime = atol(mtimec);
+	gib_hash_free_and_data(attr);
+
+	if (mtime != st.st_mtime) {
 		/* wrong mtime. or invalid one. either way, not useful */
 		return NULL;
 	}
