@@ -22,5 +22,6 @@ struct view {
 struct view *view_new();
 struct rect view_visible_rect(struct view *);
 void view_render(struct view *);
+int view_xevent(struct view *, XEvent *);
 
 #endif

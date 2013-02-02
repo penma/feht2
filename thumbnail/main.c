@@ -127,15 +127,11 @@ static void event_handle_x11(Display *dpy) {
 			continue;
 		}
 
-		if (ev.type == ConfigureNotify) {
-			view->layout->window = COORD(
-				ev.xconfigure.width,
-				ev.xconfigure.height
-			);
-			layout_recompute(view->layout);
+		if (view_xevent(view, &ev)) {
+			continue;
+		}
 
-			view->dirty = 1;
-		} else if (ev.type == Expose) {
+		if (ev.type == Expose) {
 			view->dirty = 1;
 		} else {
 			const char *event_names[] = { "", "",

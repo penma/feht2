@@ -52,3 +52,4 @@ void surface_transfer(struct surface *s) {
 	imlib_context_set_drawable(s->window);
 	imlib_render_image_on_drawable(0, 0);
 }
+
