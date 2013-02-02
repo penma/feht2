@@ -6,6 +6,7 @@
 
 #include "common/imlib_error.h"
 #include "thumbnail/thumbnail.h"
+#include "thumbnail/nailer.h"
 #include "thumbnail/frame.h"
 #include "thumbnail/layout.h"
 #include "thumbnail/view.h"
@@ -95,54 +96,6 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 	return NULL;
 }
 
-static Imlib_Image generate_thumbnail(const char *filename, int size) {
-	fprintf(stderr, "[*] generating %dx%d thumbnail of %s\n",
-		size, size, filename);
-
-	/* load image */
-
-	Imlib_Load_Error err;
-	Imlib_Image orig = imlib_load_image_with_error_return(filename, &err);
-
-	if (orig == NULL) {
-		const char *errmsg = imlib_load_error_string(err);
-		fprintf(stderr, "[-] error trying to load %s: %s\n", filename, errmsg);
-
-		return NULL; /* XXX do what with error message? extra param? */
-	}
-
-	imlib_context_set_image(orig);
-
-	struct coord image_dim = COORD(
-		imlib_image_get_width(),
-		imlib_image_get_height()
-	);
-
-	/* make thumbnail, but without upscaling smaller images. */
-
-	struct coord thumb_dim = coord_downscale_to_fit(image_dim, COORD(size, size));
-
-	Imlib_Image thumb = imlib_create_cropped_scaled_image(0, 0,
-		image_dim.width, image_dim.height,
-		thumb_dim.width, thumb_dim.height
-	);
-
-	/* can free original image now */
-
-	imlib_context_set_image(orig);
-	imlib_free_image();
-
-	/* done */
-
-	if (thumb == NULL) {
-		fprintf(stderr, "[-] error trying to downscale %s\n", filename);
-
-		return NULL;
-	}
-
-	return thumb;
-}
-
 int try_update_thumbnails() {
 	struct thumbnail *t = next_to_update(thumbnails, view->layout);
 
@@ -156,7 +109,7 @@ int try_update_thumbnails() {
 
 	/* update it */
 
-	t->imlib = generate_thumbnail(t->filename, size);
+	t->imlib = thumbnail_from_storage(t->filename, size);
 
 	if (t->imlib != NULL) {
 		imlib_context_set_image(t->imlib);
