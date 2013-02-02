@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dirent.h>
+#include <err.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,17 +34,10 @@ static int scroll_offset_start;
 static struct coord thumb_dim_start;
 
 static void eh_click(int button, struct coord pos) {
-	fprintf(stderr, "click event: button %d at %d,%d\n",
-		button, pos.x, pos.y);
-
 	int n = layout_frame_number_by_coord(view->layout, COORD(pos.x, pos.y + view->scroll_offset));
 	if (n == -1) {
-		fputs("... no image there.\n", stderr);
+		/* no image there. */
 	} else {
-		fprintf(stderr, "clicked at image %d (filename = %s)\n",
-			n,
-			thumbnails[n]->filename);
-
 		/* show image large (hack) */
 
 		if (!fork()) {
@@ -75,8 +69,10 @@ static void eh_click(int button, struct coord pos) {
 }
 
 static void eh_drag_start(int button, struct coord start) {
+	/*
 	fprintf(stderr, "drag start: button %d at %d,%d\n",
 		button, start.x, start.y);
+	*/
 
 	if (button == 1) {
 		scroll_offset_start = view->scroll_offset;
@@ -87,8 +83,10 @@ static void eh_drag_start(int button, struct coord start) {
 }
 
 static void eh_drag_stop(int button) {
+	/*
 	fprintf(stderr, "drag stop: button %d\n",
 		button);
+	*/
 
 	if (button == 2) {
 		zooming = 0;
@@ -96,8 +94,10 @@ static void eh_drag_stop(int button) {
 }
 
 static void eh_drag_update(int button, struct coord start, struct coord pointer) {
+	/*
 	fprintf(stderr, "drag update: button %d now at %d,%d start %d,%d\n",
 		button, pointer.x, pointer.y, start.x, start.y);
+	*/
 
 	if (button == 1) {
 		view->scroll_offset = scroll_offset_start - (pointer.y - start.y);
@@ -109,8 +109,6 @@ static void eh_drag_update(int button, struct coord start, struct coord pointer)
 		);
 		view->layout->frame = view->frame->frame_size(view->frame);
 		layout_recompute(view->layout);
-		fprintf(stderr, "thumb size now %dx%d\n",
-			view->frame->thumb_dim.width, view->frame->thumb_dim.height);
 		view->dirty = 1; /* XXX should be generated from inside view */
 	}
 }
@@ -129,6 +127,10 @@ static void event_handle_x11(Display *dpy) {
 			continue;
 		}
 
+		if (ev.type == KeyPress) {
+			errx(0, "o bai");
+		}
+
 		if (ev.type == Expose) {
 			view->dirty = 1;
 		} else {
@@ -144,7 +146,7 @@ static void event_handle_x11(Display *dpy) {
 				"MappingNotify"   ,"GenericEvent"                                         /* 34..35 */
 			};
 
-			fprintf(stderr, "[*] unhandled X event type %d (%s)\n",
+			warnx("unhandled X event type %d (%s)",
 				ev.type,
 				((ev.type >= 2 && ev.type <= 35) ? event_names[ev.type] : "?")
 			);

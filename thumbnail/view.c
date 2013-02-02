@@ -101,11 +101,7 @@ int view_xevent(struct view *v, XEvent *e) {
 		e->xany.display == v->surface->x11->display &&
 		e->xany.window  == v->surface->window
 	) {
-		fputs("[*] Received an event on our window\n", stderr);
-
 		if (e->type == ConfigureNotify) {
-			fputs("[+] Our surface has been resized!\n", stderr);
-
 			v->layout->window = COORD(
 				e->xconfigure.width,
 				e->xconfigure.height);

@@ -48,11 +48,13 @@ static void symbols_render(struct frame *frame, struct thumbnail *t, struct rect
 
 	/* TODO draw text */
 
-	imlib_add_path_to_font_path("/usr/share/fonts/truetype/ttf-dejavu");
-	Imlib_Font font = imlib_load_font("DejaVuSans/10");
+	if (frame->font == NULL) {
+		imlib_add_path_to_font_path("/usr/share/fonts/truetype/ttf-dejavu");
+		frame->font = imlib_load_font("DejaVuSans/10");
+	}
 
-	if (font != NULL) {
-		imlib_context_set_font(font);
+	if (frame->font != NULL) {
+		imlib_context_set_font(frame->font);
 		imlib_context_set_color(255, 255, 255, 255);
 
 		/* text to render */
@@ -90,6 +92,8 @@ struct frame *frame_new_symbols() {
 
 	f->frame_size = symbols_frame_size;
 	f->render     = symbols_render;
+
+	f->font = NULL;
 
 	return f;
 }

@@ -7,6 +7,7 @@
 
 struct frame {
 	struct coord thumb_dim;
+	Imlib_Font font;
 
 	void (*render)(struct frame *, struct thumbnail *, struct rect);
 	struct coord (*frame_size)(struct frame *);

@@ -17,9 +17,6 @@
 #include "thumbnail/thumbnail.h"
 
 static Imlib_Image regenerate_from_original(const char *filename, int size) {
-	fprintf(stderr, "[*] Actually loading %s and making a %dx%d thumbnail\n",
-		filename, size, size);
-
 	/* load image */
 
 	Imlib_Load_Error err;
@@ -27,8 +24,7 @@ static Imlib_Image regenerate_from_original(const char *filename, int size) {
 
 	if (orig == NULL) {
 		const char *errmsg = imlib_load_error_string(err);
-		fprintf(stderr, "[-] error trying to load %s: %s\n", filename, errmsg);
-
+		warnx("couldn't load %s for thumbnailing: %s", filename, errmsg);
 		return NULL; /* XXX do what with error message? extra param? */
 	}
 
@@ -56,8 +52,7 @@ static Imlib_Image regenerate_from_original(const char *filename, int size) {
 	/* done */
 
 	if (thumb == NULL) {
-		fprintf(stderr, "[-] error trying to downscale %s\n", filename);
-
+		warnx("error while downscaling %s for thumbnailing", filename);
 		return NULL;
 	}
 
@@ -81,7 +76,7 @@ static char *tms_thumbfile_for_filename(const char *filename, int size) {
 	} else if (size == 128) {
 		sizedir = "normal";
 	} else {
-		fprintf(stderr, "[!] requested thumbnail size %d which is not supported by the thumbnail managing standard\n", size);
+		warnx("requested thumbnail size %d which is not supported by the thumbnail managing standard", size);
 		/* FIXME */
 		sizedir = "normal";
 	}
@@ -110,7 +105,7 @@ static Imlib_Image check_cached(const char *filename, int size) {
 	 * is up to date */
 	struct stat st;
 	if (stat(filename, &st)) {
-		warn("[-] failure to stat original image %s", filename);
+		warn("cannot stat original image %s", filename);
 		return NULL;
 	}
 
@@ -123,13 +118,13 @@ static Imlib_Image check_cached(const char *filename, int size) {
 	gib_hash *attr = feh_png_read_comments(thumbfile);
 
 	if (attr == NULL) {
-		warnx("[-] failure to read PNG comments from %s", thumbfile);
+		/* the thumbnail file probably doesn't exist */
 		return NULL;
 	}
 
 	char *mtime = (char *) gib_hash_get(attr, "Thumb::MTime");
 	if (atol(mtime) != st.st_mtime) {
-		warnx("[-] thumbnail mtime doesn't match or is otherwise being weird");
+		/* wrong mtime. or invalid one. either way, not useful */
 		return NULL;
 	}
 
@@ -139,21 +134,18 @@ static Imlib_Image check_cached(const char *filename, int size) {
 
 	if (thumb == NULL) {
 		const char *errmsg = imlib_load_error_string(err);
-		warnx("[-] error loading thumbnail %s: %s", thumbfile, errmsg);
+		warnx("error loading thumbnail %s: %s", thumbfile, errmsg);
 		return NULL;
 	}
 
-	warnx("[+] cached thumbnail for %s is good, will use it", filename);
 	return thumb;
 }
 
 static void write_cache(const char *filename, int size, Imlib_Image thumb) {
-	warnx("[*] I shall update a %d thumbnail for %s", size, filename);
-
 	/* needs original mtime */
 	struct stat st;
 	if (stat(filename, &st)) {
-		warn("[-] failure to stat original image %s", filename);
+		warn("cannot stat original image %s", filename);
 		return;
 	}
 
@@ -173,9 +165,6 @@ static void write_cache(const char *filename, int size, Imlib_Image thumb) {
 }
 
 Imlib_Image thumbnail_from_storage(const char *filename, int size) {
-	fprintf(stderr, "[*] I shall produce a %dx%d thumbnail of %s\n",
-		size, size, filename);
-
 	Imlib_Image thumb;
 
 	/* check if a suitable cached thumbnail exists */
