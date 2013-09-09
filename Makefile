@@ -5,7 +5,7 @@ OBJ_THUMBNAIL = $(addprefix thumbnail/,layout.o frame.o view.o feh_png.o nailer.
 
 CFLAGS = -D_GNU_SOURCE -std=c99 -Wall -Wextra -ggdb -I. -Os
 
-thumbnail/thumbnail: $(OBJ_COMMON) $(OBJ_THUMBNAIL)
+thumbnail/thumbnail thumbnail/offnail: $(OBJ_COMMON) $(OBJ_THUMBNAIL)
 	$(CC) $(LDFLAGS) -o $@ $^ -lX11 -lImlib2 -lbsd -lgiblib -lpng -lm
 
 clean:

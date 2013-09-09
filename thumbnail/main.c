@@ -127,9 +127,11 @@ static void event_handle_x11(Display *dpy) {
 			continue;
 		}
 
+		/*
 		if (ev.type == KeyPress) {
 			errx(0, "o bai");
 		}
+		*/
 
 		if (ev.type == Expose) {
 			view->dirty = 1;

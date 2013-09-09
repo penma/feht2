@@ -93,6 +93,8 @@ static struct thumbnail *next_to_update(struct thumbnail **list, struct layout *
 
 	/* none! */
 
+	//exit(0);
+
 	return NULL;
 }
 

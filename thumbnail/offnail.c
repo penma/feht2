@@ -5,6 +5,7 @@
 #include <err.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <bsd/md5.h>
 
 #include <Imlib2.h>
@@ -103,13 +104,13 @@ static char *tms_thumbfile_for_filename(const char *filename, int size) {
 	return fn;
 }
 
-static Imlib_Image check_cached(const char *filename, int size) {
+static int check_cached(const char *filename, int size) {
 	/* stat the original file. necessary to verify if thumbnail
 	 * is up to date */
 	struct stat st;
 	if (stat(filename, &st)) {
 		warn("cannot stat original image %s", filename);
-		return NULL;
+		return 0;
 	}
 
 	/* where do we expect the thumbnail file? */
@@ -123,7 +124,7 @@ static Imlib_Image check_cached(const char *filename, int size) {
 	if (attr == NULL) {
 		/* the thumbnail file probably doesn't exist */
 		free(thumbfile);
-		return NULL;
+		return 0;
 	}
 
 	char *mtimec = (char *) gib_hash_get(attr, "Thumb::MTime");
@@ -133,22 +134,13 @@ static Imlib_Image check_cached(const char *filename, int size) {
 	if (mtime != st.st_mtime) {
 		/* wrong mtime. or invalid one. either way, not useful */
 		free(thumbfile);
-		return NULL;
+		return 0;
 	}
 
-	/* looks legit, load it */
-	Imlib_Load_Error err;
-	Imlib_Image thumb = imlib_load_image_with_error_return(thumbfile, &err);
-
-	if (thumb == NULL) {
-		const char *errmsg = imlib_load_error_string(err);
-		warnx("error loading thumbnail %s: %s", thumbfile, errmsg);
-		return NULL;
-	}
-
+	/* looks legit. nothing to do now */
 	free(thumbfile);
 
-	return thumb;
+	return 1;
 }
 
 static void write_cache(const char *filename, int size, Imlib_Image thumb) {
@@ -174,31 +166,40 @@ static void write_cache(const char *filename, int size, Imlib_Image thumb) {
 	NULL);
 }
 
-Imlib_Image thumbnail_from_storage(const char *filename, int size) {
-	Imlib_Image thumb;
-
+void update_thumb_for_file(const char *filename, int size) {
 	/* check if a suitable cached thumbnail exists */
 
-	thumb = check_cached(filename, size);
-
-	if (thumb != NULL) {
+	if (check_cached(filename, size)) {
 		warnx("good %s", filename);
-		return thumb;
+		return;
 	}
 
 	/* nope. we must generate it. */
 
-	thumb = regenerate_from_original(filename, size);
+	Imlib_Image thumb = regenerate_from_original(filename, size);
 
 	if (thumb == NULL) {
 		warnx("bad %s", filename);
-		return NULL;
+		return;
 	}
 
 	/* we will also cache it */
 
 	write_cache(filename, size, thumb);
 
-	return thumb;
+	imlib_context_set_image(thumb);
+	imlib_free_image();
 }
 
+int main(int argc, char *argv[]) {
+	struct dirent **dir_entries;
+	int dir_count = scandir(argv[1], &dir_entries, NULL, alphasort);
+
+	for (int i = 0; i < dir_count; i++) {
+		char *fn = dir_entries[i]->d_name;
+		char *nfn;
+		printf("%d/%d %s\n", i+1, dir_count, nfn);
+		asprintf(&nfn, "%s/%s", argv[1], fn);
+		update_thumb_for_file(nfn, 256);
+	}
+}
